@@ -1,0 +1,183 @@
+# EnovAIt Backend
+
+Production-ready Node.js + TypeScript backend for EnovAIt: conversational enterprise data collection, workflow automation, and real-time reporting on Supabase.
+
+## 1) Project Folder Structure
+
+```text
+enovait-backend/
+|-- .env.example
+|-- package.json
+|-- tsconfig.json
+|-- README.md
+|-- supabase/
+|   |-- schema.sql
+|   `-- seed/
+|       `-- seed.sql
+`-- src/
+    |-- app.ts
+    |-- index.ts
+    |-- config.ts
+    |-- api/
+    |   |-- controllers/
+    |   |   |-- adminController.ts
+    |   |   |-- chatController.ts
+    |   |   |-- dataController.ts
+    |   |   |-- healthController.ts
+    |   |   |-- reportController.ts
+    |   |   `-- workflowController.ts
+    |   |-- middlewares/
+    |   |   |-- errorHandler.ts
+    |   |   |-- notFound.ts
+    |   |   |-- requireAdmin.ts
+    |   |   `-- requireAuth.ts
+    |   |-- routes/
+    |   |   |-- adminRoutes.ts
+    |   |   |-- chatRoutes.ts
+    |   |   |-- dataRoutes.ts
+    |   |   |-- healthRoutes.ts
+    |   |   |-- reportRoutes.ts
+    |   |   |-- v1Router.ts
+    |   |   `-- workflowRoutes.ts
+    |   `-- schemas/
+    |       |-- adminSchemas.ts
+    |       |-- chatSchemas.ts
+    |       |-- dataSchemas.ts
+    |       |-- reportSchemas.ts
+    |       `-- workflowSchemas.ts
+    |-- lib/
+    |   |-- asyncHandler.ts
+    |   |-- errors.ts
+    |   |-- logger.ts
+    |   |-- requestContext.ts
+    |   `-- supabase.ts
+    |-- services/
+    |   |-- ai/
+    |   |   |-- openaiProvider.ts
+    |   |   |-- providerFactory.ts
+    |   |   `-- types.ts
+    |   |-- chat/
+    |   |   `-- chatService.ts
+    |   |-- ingestion/
+    |   |   `-- excelIngestionService.ts
+    |   |-- reporting/
+    |   |   `-- reportService.ts
+    |   `-- workflow/
+    |       `-- workflowEngine.ts
+    `-- types/
+        |-- auth.ts
+        `-- express.d.ts
+```
+
+## 2) `.env.example`
+
+```env
+NODE_ENV=development
+PORT=8080
+
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_ANON_KEY=your-anon-key
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+SUPABASE_JWT_SECRET=your-jwt-secret
+
+AI_PROVIDER=openai
+OPENAI_API_KEY=your-openai-api-key
+AI_MODEL=gpt-4o-mini
+
+LOG_LEVEL=info
+RATE_LIMIT_WINDOW_MS=60000
+RATE_LIMIT_MAX=120
+
+WEBHOOK_SIGNING_SECRET=replace-me
+```
+
+## 3) Database Schema + RLS
+
+- Full schema is in `supabase/schema.sql`
+- Seed data is in `supabase/seed/seed.sql`
+- Includes:
+  - multi-tenant tables (`organizations`, `users`, `modules`, `chat_sessions`, `messages`, `extracted_data`, `data_records`, `workflow_rules`, `workflow_instances`, `reports`, `templates`, `integrations`, `notifications`, `workflow_events`)
+  - audit/version fields on all core tables (`created_by`, `updated_by`, `created_at`, `updated_at`, `version`)
+  - indexes + JSONB GIN indexes
+  - reporting views (`v_esg_summary`, `v_operations_dashboard`) + materialized view (`mv_module_record_counts`)
+  - org-scoped Row Level Security policies using `current_org_id()` and `is_org_admin()`
+
+## Architecture (Text Diagram)
+
+```text
+Client (Web/Mobile)
+  -> POST /api/v1/chat/message
+    -> Auth middleware (Supabase JWT)
+      -> chatService
+        -> persist message (messages)
+        -> AI provider (structured output)
+        -> persist extraction (extracted_data)
+        -> upsert clean record (data_records)
+        -> workflowEngine (workflow_rules -> workflow_instances)
+        -> assistant response (messages)
+
+Reporting APIs
+  -> views/materialized views + reports snapshots
+
+Realtime
+  -> Supabase Realtime on postgres_changes for messages, workflow_instances, reports
+```
+
+## Setup
+
+1. Create a Supabase project.
+2. Copy env file:
+   - `cp .env.example .env` (or create manually on Windows).
+3. Fill all required env vars.
+4. Install dependencies:
+   - `npm install`
+5. Apply DB schema:
+   - `supabase db push` (or run `supabase/schema.sql` directly in SQL editor)
+6. Seed demo data:
+   - run `supabase/seed/seed.sql`
+7. Start backend:
+   - `npm run dev`
+
+## Migration Workflow (Supabase CLI)
+
+1. `supabase migration new init_enovait_backend`
+2. copy `supabase/schema.sql` into generated migration SQL
+3. `supabase db push`
+4. `supabase migration list`
+
+## API Surface (`/api/v1/*`)
+
+Public:
+- `GET /api/v1/health`
+
+Protected (Supabase JWT required):
+- `POST /api/v1/chat/message`
+- `GET /api/v1/data/records`
+- `GET /api/v1/data/records/:id`
+- `POST /api/v1/data/ingest/excel` (multipart, `file`, `module_id`)
+- `GET /api/v1/workflows/instances/:id`
+- `POST /api/v1/workflows/instances/:id/transition`
+- `POST /api/v1/reports/generate`
+- `GET /api/v1/reports/:id`
+- `GET/POST/PUT /api/v1/admin/modules*`
+- `GET/POST/PUT /api/v1/admin/templates*`
+- `GET/POST/PUT /api/v1/admin/workflow-rules*`
+- `GET/PUT /api/v1/admin/settings`
+
+## Core Chat + Extraction Flow
+
+1. Save incoming user message.
+2. Load recent conversation + module template context.
+3. Run AI structured extraction (JSON schema mode).
+4. Save `extracted_data` with completeness + missing fields.
+5. If complete:
+   - upsert `data_records`
+   - evaluate and trigger `workflow_rules`.
+6. Save assistant response (clarifying question or completion acknowledgement).
+
+## Notes for Production Hardening
+
+- Add provider adapters for Anthropic/Grok in `src/services/ai`.
+- Move workflow notification side effects to queue/worker for high throughput.
+- Add automated tests for RLS and extraction correctness.
+- Upgrade to `multer` 2.x when compatible in your deployment context.
