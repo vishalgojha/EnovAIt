@@ -181,3 +181,27 @@ Protected (Supabase JWT required):
 - Move workflow notification side effects to queue/worker for high throughput.
 - Add automated tests for RLS and extraction correctness.
 - Upgrade to `multer` 2.x when compatible in your deployment context.
+
+## CI/CD (GitHub Actions)
+
+The repo now includes:
+- `.github/workflows/ci.yml`: runs on push/PR and executes `npm ci`, `npm run typecheck`, `npm run build`, and critical production audit.
+- `.github/workflows/cd.yml`: runs on `main` (or manually) and:
+  - builds + pushes Docker image to GHCR: `ghcr.io/<owner>/<repo>`
+  - optionally triggers deploy webhook if configured.
+
+### Required/Optional GitHub Secrets
+
+Optional for CD deploy trigger:
+- `DEPLOY_WEBHOOK_URL`: your hosting provider deploy webhook URL (Railway/Render/Fly/etc.)
+
+No PAT is needed for GHCR when using default `GITHUB_TOKEN` in this workflow.
+
+## Docker Deployment
+
+- Build locally:
+  - `docker build -t enovait-backend:latest .`
+- Run locally:
+  - `docker run --env-file .env -p 8080:8080 enovait-backend:latest`
+
+The Docker setup uses a multi-stage build and runs compiled `dist/index.js` in production mode.
