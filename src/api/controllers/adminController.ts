@@ -4,6 +4,7 @@ import { AppError } from "../../lib/errors.js";
 import { getRequestContext } from "../../lib/requestContext.js";
 import {
   ResourceIdParamSchema,
+  UpsertIntegrationSchema,
   UpsertModuleSchema,
   UpsertTemplateSchema,
   UpsertWorkflowRuleSchema
@@ -179,6 +180,79 @@ export const adminController = {
 
     if (error || !data) {
       throw new AppError("Failed to update workflow rule", 500, "DB_WRITE_FAILED", error);
+    }
+
+    res.status(200).json({ data });
+  },
+
+  async listIntegrations(req: Request, res: Response) {
+    const { auth, supabase } = getRequestContext(req);
+
+    const { data, error } = await supabase
+      .from("integrations")
+      .select("*")
+      .eq("org_id", auth.orgId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      throw new AppError("Failed to list integrations", 500, "DB_READ_FAILED", error);
+    }
+
+    res.status(200).json({ data: data ?? [] });
+  },
+
+  async createIntegration(req: Request, res: Response) {
+    const payload = UpsertIntegrationSchema.parse(req.body);
+    const { auth, supabase } = getRequestContext(req);
+
+    const { data, error } = await supabase
+      .from("integrations")
+      .insert({
+        org_id: auth.orgId,
+        ...payload,
+        module_id: payload.module_id ?? null,
+        secret_ref: payload.secret_ref ?? null,
+        created_by: auth.userId,
+        updated_by: auth.userId
+      })
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new AppError("Failed to create integration", 500, "DB_WRITE_FAILED", error);
+    }
+
+    res.status(201).json({ data });
+  },
+
+  async updateIntegration(req: Request, res: Response) {
+    const { id } = ResourceIdParamSchema.parse(req.params);
+    const payload = UpsertIntegrationSchema.partial().parse(req.body);
+    const { auth, supabase } = getRequestContext(req);
+
+    const updateData: Record<string, unknown> = {
+      ...payload,
+      updated_by: auth.userId
+    };
+
+    if (payload.module_id === undefined) {
+      delete updateData.module_id;
+    }
+
+    if (payload.secret_ref === undefined) {
+      delete updateData.secret_ref;
+    }
+
+    const { data, error } = await supabase
+      .from("integrations")
+      .update(updateData)
+      .eq("id", id)
+      .eq("org_id", auth.orgId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new AppError("Failed to update integration", 500, "DB_WRITE_FAILED", error);
     }
 
     res.status(200).json({ data });

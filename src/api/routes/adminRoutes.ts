@@ -20,5 +20,9 @@ adminRouter.get("/workflow-rules", asyncHandler(adminController.listWorkflowRule
 adminRouter.post("/workflow-rules", asyncHandler(adminController.createWorkflowRule));
 adminRouter.put("/workflow-rules/:id", asyncHandler(adminController.updateWorkflowRule));
 
+adminRouter.get("/integrations", asyncHandler(adminController.listIntegrations));
+adminRouter.post("/integrations", asyncHandler(adminController.createIntegration));
+adminRouter.put("/integrations/:id", asyncHandler(adminController.updateIntegration));
+
 adminRouter.get("/settings", asyncHandler(adminController.getOrgSettings));
 adminRouter.put("/settings", asyncHandler(adminController.updateOrgSettings));

@@ -205,3 +205,35 @@ No PAT is needed for GHCR when using default `GITHUB_TOKEN` in this workflow.
   - `docker run --env-file .env -p 8080:8080 enovait-backend:latest`
 
 The Docker setup uses a multi-stage build and runs compiled `dist/index.js` in production mode.
+
+## New AI Provider Options
+
+Set `AI_PROVIDER` to one of:
+- `openai`
+- `anthropic`
+- `openrouter`
+
+Provider envs:
+- OpenAI: `OPENAI_API_KEY`, optional `OPENAI_MODEL`
+- Anthropic: `ANTHROPIC_API_KEY`, optional `ANTHROPIC_MODEL`
+- OpenRouter: `OPENROUTER_API_KEY`, optional `OPENROUTER_MODEL`, optional `OPENROUTER_SITE_URL`, `OPENROUTER_APP_NAME`
+
+## WhatsApp Integration Channels
+
+### Authenticated channel endpoints
+- `POST /api/v1/channels/whatsapp/send`
+  - body: `{ "provider": "official" | "baileys", "to": "<phone>", "message": "<text>" }`
+- `GET /api/v1/channels/whatsapp/baileys/status`
+
+### Public webhook endpoint (Meta Official API)
+- `GET /api/v1/channels/whatsapp/official/webhook` (verification)
+- `POST /api/v1/channels/whatsapp/official/webhook` (events)
+
+### Admin integration config endpoints
+- `GET /api/v1/admin/integrations`
+- `POST /api/v1/admin/integrations`
+- `PUT /api/v1/admin/integrations/:id`
+
+Supported integration types now include:
+- `whatsapp_official`
+- `whatsapp_baileys`

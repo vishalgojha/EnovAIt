@@ -15,7 +15,9 @@
     "check": "npm run typecheck"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.57.0",
     "@supabase/supabase-js": "^2.52.0",
+    "@whiskeysockets/baileys": "^6.7.18",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

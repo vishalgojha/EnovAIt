@@ -2,25 +2,32 @@ import OpenAI from "openai";
 
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
+import { buildExtractionSystemPrompt, buildExtractionUserPrompt, extractionOutputJsonSchema } from "./extractionSchema.js";
 import {
   type AIExtractionProvider,
   type ExtractionInput,
   type ExtractionResult,
   ExtractionResultSchema
 } from "./types.js";
-import { buildExtractionSystemPrompt, buildExtractionUserPrompt, extractionOutputJsonSchema } from "./extractionSchema.js";
 
-export class OpenAIExtractionProvider implements AIExtractionProvider {
+export class OpenRouterExtractionProvider implements AIExtractionProvider {
   private readonly client: OpenAI;
 
   constructor() {
-    this.client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    this.client = new OpenAI({
+      apiKey: env.OPENROUTER_API_KEY,
+      baseURL: "https://openrouter.ai/api/v1",
+      defaultHeaders: {
+        ...(env.OPENROUTER_SITE_URL ? { "HTTP-Referer": env.OPENROUTER_SITE_URL } : {}),
+        ...(env.OPENROUTER_APP_NAME ? { "X-Title": env.OPENROUTER_APP_NAME } : {})
+      }
+    });
   }
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {
     try {
       const completion = await this.client.chat.completions.create({
-        model: env.OPENAI_MODEL ?? env.AI_MODEL,
+        model: env.OPENROUTER_MODEL ?? env.AI_MODEL,
         temperature: 0,
         messages: [
           { role: "system", content: buildExtractionSystemPrompt(input) },
@@ -38,7 +45,7 @@ export class OpenAIExtractionProvider implements AIExtractionProvider {
 
       const raw = completion.choices[0]?.message?.content;
       if (!raw) {
-        throw new AppError("AI returned empty response", 502, "AI_EMPTY_RESPONSE");
+        throw new AppError("OpenRouter returned empty response", 502, "AI_EMPTY_RESPONSE");
       }
 
       return ExtractionResultSchema.parse(JSON.parse(raw));
@@ -46,7 +53,7 @@ export class OpenAIExtractionProvider implements AIExtractionProvider {
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError("AI extraction failed", 502, "AI_EXTRACTION_FAILED", error);
+      throw new AppError("OpenRouter extraction failed", 502, "AI_EXTRACTION_FAILED", error);
     }
   }
 }

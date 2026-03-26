@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ChatMessageRequest } from "../../api/schemas/chatSchemas.js";
+import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
 import type { AuthContext } from "../../types/auth.js";
 import { createAIProvider } from "../ai/providerFactory.js";
@@ -208,8 +209,8 @@ export const chatService = {
         module_id: session.module_id,
         session_id: session.id,
         message_id: userMessage.id,
-        extractor_provider: process.env.AI_PROVIDER ?? "openai",
-        model_name: process.env.AI_MODEL ?? "gpt-4o-mini",
+        extractor_provider: env.AI_PROVIDER,
+        model_name: env.AI_MODEL,
         payload: extraction.extracted_fields,
         completeness_score: Number((extraction.completeness_score * 100).toFixed(2)),
         missing_fields: extraction.missing_fields,
@@ -259,3 +260,6 @@ export const chatService = {
     };
   }
 };
+
+
+

@@ -73,6 +73,32 @@ set condition = excluded.condition,
     priority = excluded.priority,
     is_active = excluded.is_active;
 
+
+insert into public.integrations (id, org_id, module_id, name, integration_type, config, is_active)
+values
+(
+  '66666666-6666-6666-6666-666666666661',
+  '11111111-1111-1111-1111-111111111111',
+  null,
+  'WhatsApp Official Demo',
+  'whatsapp_official',
+  '{"channel":"official","api_version":"v22.0"}'::jsonb,
+  true
+),
+(
+  '66666666-6666-6666-6666-666666666662',
+  '11111111-1111-1111-1111-111111111111',
+  null,
+  'WhatsApp Baileys Demo',
+  'whatsapp_baileys',
+  '{"channel":"baileys","session_path":".baileys_auth"}'::jsonb,
+  true
+)
+on conflict (id) do update
+set name = excluded.name,
+    integration_type = excluded.integration_type,
+    config = excluded.config,
+    is_active = excluded.is_active;
 -- Optional app user row if auth user exists.
 do $$
 declare
@@ -98,3 +124,5 @@ begin
 end $$;
 
 commit;
+
+

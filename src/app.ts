@@ -3,11 +3,12 @@ import express from "express";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 
-import { v1Router } from "./api/routes/v1Router.js";
-import { healthRouter } from "./api/routes/healthRoutes.js";
 import { errorHandler } from "./api/middlewares/errorHandler.js";
 import { notFoundHandler } from "./api/middlewares/notFound.js";
 import { requireAuth } from "./api/middlewares/requireAuth.js";
+import { healthRouter } from "./api/routes/healthRoutes.js";
+import { v1Router } from "./api/routes/v1Router.js";
+import { whatsappWebhookRouter } from "./api/routes/whatsappWebhookRoutes.js";
 import { env } from "./config.js";
 import { requestLogger } from "./lib/logger.js";
 
@@ -29,6 +30,7 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/channels/whatsapp/official/webhook", whatsappWebhookRouter);
 app.use("/api/v1", requireAuth, v1Router);
 
 app.use(notFoundHandler);

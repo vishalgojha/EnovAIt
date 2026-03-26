@@ -1,0 +1,9 @@
+import { Router } from "express";
+
+import { channelController } from "../controllers/channelController.js";
+import { asyncHandler } from "../../lib/asyncHandler.js";
+
+export const channelRouter = Router();
+
+channelRouter.post("/whatsapp/send", asyncHandler(channelController.sendWhatsAppMessage));
+channelRouter.get("/whatsapp/baileys/status", asyncHandler(channelController.getBaileysStatus));
