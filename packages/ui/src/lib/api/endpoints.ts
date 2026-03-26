@@ -22,6 +22,69 @@ interface DataRecordListEnvelope {
   };
 }
 
+export interface DashboardOverview {
+  backendHealthy: boolean;
+  modulesCount: number;
+  templatesCount: number;
+  workflowRulesCount: number;
+  recordsCount: number;
+  chartData: Array<{
+    name: string;
+    records: number;
+  }>;
+  recentRecords: Array<{
+    id: string;
+    name: string;
+    status: DataRecord["status"];
+    time: string;
+  }>;
+}
+
+const formatRelativeTime = (iso: string): string => {
+  const ts = new Date(iso).getTime();
+  if (!Number.isFinite(ts)) {
+    return "unknown";
+  }
+
+  const diffMs = Date.now() - ts;
+  const diffMins = Math.max(1, Math.floor(diffMs / 60000));
+
+  if (diffMins < 60) {
+    return `${diffMins} min ago`;
+  }
+
+  const diffHours = Math.floor(diffMins / 60);
+  if (diffHours < 24) {
+    return `${diffHours} hr ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+  return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+};
+
+const buildRecordsChart = (records: DataRecord[]): Array<{ name: string; records: number }> => {
+  const buckets = new Map<string, number>();
+
+  for (const record of records) {
+    const date = new Date(record.created_at);
+    if (!Number.isFinite(date.getTime())) {
+      continue;
+    }
+
+    const key = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+
+  const sorted = [...buckets.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(-6);
+
+  return sorted.map(([key, count]) => {
+    const [year, month] = key.split("-");
+    const labelDate = new Date(Date.UTC(Number(year), Number(month) - 1, 1));
+    const label = labelDate.toLocaleString("en-US", { month: "short" });
+    return { name: label, records: count };
+  });
+};
+
 export const adminApi = {
   // Modules
   getModules: async () => (await api.get<ApiEnvelope<Module[]>>('/admin/modules')).data,
@@ -82,4 +145,44 @@ export const channelApi = {
   sendMessage: async (_data: { channel: string; to: string; content: any }) =>
     ({ ok: true, queued_at: new Date().toISOString() }),
   getStatus: async (_channel: string) => ({ status: 'operational', health: 99 }),
+};
+
+export const dashboardApi = {
+  getOverview: async (): Promise<DashboardOverview> => {
+    const [healthResult, modulesResult, templatesResult, workflowRulesResult, recordsResult] = await Promise.allSettled([
+      api.get<{ status: string }>('/health'),
+      adminApi.getModules(),
+      adminApi.getTemplates(),
+      adminApi.getWorkflowRules(),
+      dataApi.getRecords({ limit: 200, offset: 0 }),
+    ]);
+
+    const backendHealthy = healthResult.status === "fulfilled" && healthResult.value.status === "ok";
+    const modules = modulesResult.status === "fulfilled" ? modulesResult.value : [];
+    const templates = templatesResult.status === "fulfilled" ? templatesResult.value : [];
+    const workflowRules = workflowRulesResult.status === "fulfilled" ? workflowRulesResult.value : [];
+    const records = recordsResult.status === "fulfilled" ? recordsResult.value : [];
+
+    const recentRecords = [...records]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 5)
+      .map((record) => ({
+        id: record.id,
+        name: record.title || record.record_type,
+        status: record.status,
+        time: formatRelativeTime(record.created_at),
+      }));
+
+    const chartData = buildRecordsChart(records);
+
+    return {
+      backendHealthy,
+      modulesCount: modules.length,
+      templatesCount: templates.length,
+      workflowRulesCount: workflowRules.length,
+      recordsCount: records.length,
+      chartData,
+      recentRecords,
+    };
+  },
 };
