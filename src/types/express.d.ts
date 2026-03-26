@@ -8,6 +8,7 @@ declare global {
       auth?: AuthContext;
       supabase?: SupabaseClient;
       accessToken?: string;
+      rawBody?: string;
     }
   }
 }

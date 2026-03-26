@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
+import { withRetry } from "../../lib/retry.js";
 import { buildExtractionSystemPrompt, buildExtractionUserPrompt } from "./extractionSchema.js";
 import { parseJsonFromText } from "./jsonUtils.js";
 import {
@@ -20,13 +21,20 @@ export class AnthropicExtractionProvider implements AIExtractionProvider {
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {
     try {
-      const response = await this.client.messages.create({
-        model: env.ANTHROPIC_MODEL ?? env.AI_MODEL,
-        max_tokens: 1200,
-        temperature: 0,
-        system: buildExtractionSystemPrompt(input),
-        messages: [{ role: "user", content: buildExtractionUserPrompt(input) }]
-      });
+      const response = await withRetry(
+        () =>
+          this.client.messages.create({
+            model: env.ANTHROPIC_MODEL ?? env.AI_MODEL,
+            max_tokens: 1200,
+            temperature: 0,
+            system: buildExtractionSystemPrompt(input),
+            messages: [{ role: "user", content: buildExtractionUserPrompt(input) }]
+          }),
+        {
+          attempts: env.AI_RETRY_ATTEMPTS,
+          baseDelayMs: env.AI_RETRY_BASE_MS
+        }
+      );
 
       const text = response.content
         .filter((item) => item.type === "text")

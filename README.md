@@ -263,3 +263,21 @@ Backward-compatible WhatsApp APIs still work:
 - `POST /api/v1/channels/whatsapp/send`
 - `GET /api/v1/channels/whatsapp/baileys/status`
 - `GET/POST /api/v1/channels/whatsapp/official/webhook`
+
+## Security + Reliability Hardening (Implemented)
+
+- Tenant-aware API rate limiting:
+  - Global API limiter + tenant/user-scoped limiter (`tenant:<org_id>:user:<user_id>:ip:<ip>`)
+  - Per-tenant override support via `RATE_LIMIT_TENANT_OVERRIDES_JSON`
+- Input sanitization middleware:
+  - Recursive sanitization for request body/query using `xss`
+- Webhook signature verification:
+  - HMAC SHA-256 validation using raw payload body
+  - Supports `x-webhook-signature-sha256`, `x-signature`, `x-hub-signature-256`, `x-razorpay-signature`
+- AI retry policy:
+  - Exponential backoff + jitter (`AI_RETRY_ATTEMPTS`, `AI_RETRY_BASE_MS`)
+- AI failure tracking:
+  - `ai_failures` table + RLS policy + indexes
+  - Chat extraction failures logged for monitoring and alerting pipelines
+- Prompt-injection guardrail:
+  - Heuristic detection blocks high-risk instruction-manipulation inputs before extraction

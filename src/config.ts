@@ -22,6 +22,8 @@ const EnvSchema = z.object({
   OPENROUTER_MODEL: z.string().optional(),
   OPENROUTER_SITE_URL: z.string().url().optional(),
   OPENROUTER_APP_NAME: z.string().optional(),
+  AI_RETRY_ATTEMPTS: z.coerce.number().int().min(1).max(10).default(3),
+  AI_RETRY_BASE_MS: z.coerce.number().int().min(50).max(10000).default(400),
 
   WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
   WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
@@ -60,6 +62,10 @@ const EnvSchema = z.object({
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(240),
+  RATE_LIMIT_TENANT_DEFAULT_MAX: z.coerce.number().int().positive().default(120),
+  RATE_LIMIT_TENANT_OVERRIDES_JSON: z.string().optional(),
+
   WEBHOOK_SIGNING_SECRET: z.string().optional()
 });
 
@@ -76,5 +82,25 @@ if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
 if (env.AI_PROVIDER === "openrouter" && !env.OPENROUTER_API_KEY) {
   throw new Error("OPENROUTER_API_KEY is required when AI_PROVIDER=openrouter");
 }
+
+export const tenantRateLimitOverrides = (() => {
+  if (!env.RATE_LIMIT_TENANT_OVERRIDES_JSON) {
+    return {} as Record<string, number>;
+  }
+
+  try {
+    const parsed = JSON.parse(env.RATE_LIMIT_TENANT_OVERRIDES_JSON) as Record<string, unknown>;
+    const normalized: Record<string, number> = {};
+    for (const [key, value] of Object.entries(parsed)) {
+      const n = Number(value);
+      if (Number.isFinite(n) && n > 0) {
+        normalized[key] = Math.floor(n);
+      }
+    }
+    return normalized;
+  } catch {
+    return {} as Record<string, number>;
+  }
+})();
 
 export type RuntimeEnv = typeof env;

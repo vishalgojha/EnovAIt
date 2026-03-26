@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 
 import type { ChatMessageRequest } from "../../api/schemas/chatSchemas.js";
 import { env } from "../../config.js";
+import { isHighRiskPromptInjection } from "../../lib/aiSafety.js";
 import { AppError } from "../../lib/errors.js";
 import type { AuthContext } from "../../types/auth.js";
 import { createAIProvider } from "../ai/providerFactory.js";
@@ -140,6 +141,34 @@ const upsertDataRecord = async (
   return inserted.id;
 };
 
+const logAiFailure = async (
+  supabase: SupabaseClient,
+  auth: AuthContext,
+  session: SessionModuleRow,
+  error: unknown
+): Promise<void> => {
+  const appError = error instanceof AppError ? error : null;
+  const details = appError?.details ?? (error instanceof Error ? { message: error.message } : { raw: String(error) });
+
+  await supabase.from("ai_failures").insert({
+    org_id: auth.orgId,
+    session_id: session.id,
+    module_id: session.module_id,
+    user_id: auth.userId,
+    provider: env.AI_PROVIDER,
+    model_name: env.AI_MODEL,
+    error_code: appError?.code ?? "AI_UNKNOWN_ERROR",
+    error_message: appError?.message ?? "AI extraction failed",
+    attempts:
+      typeof (details as { attempts?: unknown }).attempts === "number"
+        ? ((details as { attempts: number }).attempts as number)
+        : 1,
+    raw_error: details,
+    created_by: auth.userId,
+    updated_by: auth.userId
+  });
+};
+
 export const chatService = {
   async processMessage(supabase: SupabaseClient, auth: AuthContext, payload: ChatMessageRequest) {
     const { data: sessionData, error: sessionError } = await supabase
@@ -156,6 +185,14 @@ export const chatService = {
     const session = sessionData as unknown as SessionModuleRow;
     if (!session.module) {
       throw new AppError("Module missing for session", 500, "MODULE_NOT_FOUND");
+    }
+
+    if (isHighRiskPromptInjection(payload.message)) {
+      throw new AppError(
+        "Message looks like prompt-injection content. Please rephrase with business data only.",
+        400,
+        "PROMPT_INJECTION_RISK"
+      );
     }
 
     const { error: messageError, data: userMessage } = await supabase
@@ -186,19 +223,25 @@ export const chatService = {
 
     const context = await getTemplateContext(supabase, auth.orgId, session.module_id);
 
-    const extraction = await aiProvider.extractStructuredData({
-      moduleCode: session.module.code,
-      moduleName: session.module.name,
-      message: payload.message,
-      history: (recentMessages ?? [])
-        .map((item) => ({
-          role: item.role as "user" | "assistant" | "system",
-          content: item.content as string
-        }))
-        .reverse(),
-      templateSchema: context.schema,
-      questionFlow: context.questionFlow
-    });
+    let extraction: ExtractionResult;
+    try {
+      extraction = await aiProvider.extractStructuredData({
+        moduleCode: session.module.code,
+        moduleName: session.module.name,
+        message: payload.message,
+        history: (recentMessages ?? [])
+          .map((item) => ({
+            role: item.role as "user" | "assistant" | "system",
+            content: item.content as string
+          }))
+          .reverse(),
+        templateSchema: context.schema,
+        questionFlow: context.questionFlow
+      });
+    } catch (error) {
+      await logAiFailure(supabase, auth, session, error);
+      throw error;
+    }
 
     const extractionStatus = extraction.is_complete ? "completed" : "partial";
 
@@ -260,6 +303,3 @@ export const chatService = {
     };
   }
 };
-
-
-
