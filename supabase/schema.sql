@@ -309,6 +309,9 @@ create table if not exists public.notifications (
   title text not null,
   body text not null,
   metadata jsonb not null default '{}'::jsonb,
+  scheduled_at timestamptz not null default timezone('utc', now()),
+  retry_count integer not null default 0,
+  last_error text,
   sent_at timestamptz,
   created_by uuid references auth.users(id),
   updated_by uuid references auth.users(id),
@@ -351,6 +354,7 @@ create index if not exists idx_workflow_instances_record on public.workflow_inst
 create index if not exists idx_reports_org_type on public.reports(org_id, report_type, generated_at desc);
 create index if not exists idx_integrations_org on public.integrations(org_id, integration_type, is_active);
 create index if not exists idx_notifications_org_user on public.notifications(org_id, user_id, status);
+create index if not exists idx_notifications_pending_schedule on public.notifications(status, scheduled_at, created_at);
 create index if not exists idx_workflow_events_pending on public.workflow_events(org_id, event_type, processed_at);
 
 drop trigger if exists trg_audit_organizations on public.organizations;

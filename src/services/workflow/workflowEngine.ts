@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { logger } from "../../lib/logger.js";
+
 interface WorkflowRuleCondition {
   path?: string;
   operator?: "eq" | "neq" | "gt" | "lt" | "contains" | "in";
@@ -127,22 +129,36 @@ export const workflowEngine = {
 
       const notifyChannels = Array.isArray(rule.action?.notify) ? rule.action.notify : [];
       if (notifyChannels.length > 0) {
-        for (const channel of notifyChannels) {
-          await supabase.from("notifications").insert({
-            org_id: input.orgId,
-            user_id: assignedTo,
-            workflow_instance_id: instance.id,
-            channel,
-            status: "pending",
-            title: "Workflow task created",
-            body: `Workflow ${instance.id} is ${state} at step ${step}`,
-            metadata: {
-              data_record_id: input.dataRecordId,
-              module_id: input.moduleId
-            },
-            created_by: input.actorUserId,
-            updated_by: input.actorUserId
-          });
+        try {
+          for (const channel of notifyChannels) {
+            const { error: notificationError } = await supabase.from("notifications").insert({
+              org_id: input.orgId,
+              user_id: assignedTo,
+              workflow_instance_id: instance.id,
+              channel,
+              status: "pending",
+              title: "Workflow task created",
+              body: `Workflow ${instance.id} is ${state} at step ${step}`,
+              metadata: {
+                data_record_id: input.dataRecordId,
+                module_id: input.moduleId
+              },
+              created_by: input.actorUserId,
+              updated_by: input.actorUserId
+            });
+
+            if (notificationError) {
+              logger.error(
+                { err: notificationError, workflow_instance_id: instance.id, channel, org_id: input.orgId },
+                "Failed to queue workflow notification"
+              );
+            }
+          }
+        } catch (error) {
+          logger.error(
+            { err: error, workflow_instance_id: instance.id, org_id: input.orgId },
+            "Unexpected error while queueing workflow notifications"
+          );
         }
       }
     }
