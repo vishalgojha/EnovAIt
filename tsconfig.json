@@ -24,6 +24,15 @@
   ],
   "exclude": [
     "node_modules",
-    "dist"
+    "dist",
+    "src/App.tsx",
+    "src/main.tsx",
+    "src/index.css",
+    "src/components",
+    "src/pages",
+    "src/lib/api",
+    "src/lib/store",
+    "src/lib/utils.ts",
+    "src/types/index.ts"
   ]
 }
