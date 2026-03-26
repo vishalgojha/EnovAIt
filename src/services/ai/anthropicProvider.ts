@@ -47,6 +47,10 @@ export class AnthropicExtractionProvider implements AIExtractionProvider {
       }
 
       const parsed = parseJsonFromText(text);
+      if (parsed === null) {
+        throw new AppError("AI returned invalid JSON", 502, "AI_INVALID_JSON", { raw: text });
+      }
+
       return ExtractionResultSchema.parse(parsed);
     } catch (error) {
       if (error instanceof AppError) {

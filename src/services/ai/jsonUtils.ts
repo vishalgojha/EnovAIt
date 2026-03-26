@@ -1,6 +1,4 @@
-import { AppError } from "../../lib/errors.js";
-
-export const parseJsonFromText = (raw: string): unknown => {
+export const parseJsonFromText = (raw: string): unknown | null => {
   const trimmed = raw.trim();
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
   const candidate = fenced?.[1]?.trim() ?? trimmed;
@@ -15,9 +13,9 @@ export const parseJsonFromText = (raw: string): unknown => {
       try {
         return JSON.parse(subset);
       } catch {
-        throw new AppError("AI returned invalid JSON", 502, "AI_INVALID_JSON", { raw: candidate });
+        return null;
       }
     }
-    throw new AppError("AI returned invalid JSON", 502, "AI_INVALID_JSON", { raw: candidate });
+    return null;
   }
 };
