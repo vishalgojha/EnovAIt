@@ -1,9 +1,6 @@
-node_modules/
-build/
-dist/
-coverage/
+node_modules
+dist
+.env
 .DS_Store
-*.log
-.env*
-!.env.example
+npm-debug.log*
 .git_broken_backup/
