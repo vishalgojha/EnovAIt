@@ -237,3 +237,29 @@ Provider envs:
 Supported integration types now include:
 - `whatsapp_official`
 - `whatsapp_baileys`
+
+## Full Channel Matrix (Implemented)
+
+Supported channels:
+- `whatsapp_official`
+- `whatsapp_baileys`
+- `email`
+- `slack`
+- `msteams`
+- `web_widget`
+- `mobile_sdk`
+- `sms`
+- `voice_ivr`
+- `iot_mqtt`
+- `erp_crm`
+- `api_partner`
+
+Unified channel APIs:
+- `POST /api/v1/channels/send`
+- `GET /api/v1/channels/status/:channel`
+- `POST /api/v1/channels/webhooks/:channel` (public, optional `x-channel-webhook-token`)
+
+Backward-compatible WhatsApp APIs still work:
+- `POST /api/v1/channels/whatsapp/send`
+- `GET /api/v1/channels/whatsapp/baileys/status`
+- `GET/POST /api/v1/channels/whatsapp/official/webhook`

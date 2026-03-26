@@ -6,6 +6,7 @@ import helmet from "helmet";
 import { errorHandler } from "./api/middlewares/errorHandler.js";
 import { notFoundHandler } from "./api/middlewares/notFound.js";
 import { requireAuth } from "./api/middlewares/requireAuth.js";
+import { channelWebhookRouter } from "./api/routes/channelWebhookRoutes.js";
 import { healthRouter } from "./api/routes/healthRoutes.js";
 import { v1Router } from "./api/routes/v1Router.js";
 import { whatsappWebhookRouter } from "./api/routes/whatsappWebhookRoutes.js";
@@ -30,6 +31,7 @@ const limiter = rateLimit({
 app.use("/api", limiter);
 
 app.use("/api/v1/health", healthRouter);
+app.use("/api/v1/channels/webhooks", channelWebhookRouter);
 app.use("/api/v1/channels/whatsapp/official/webhook", whatsappWebhookRouter);
 app.use("/api/v1", requireAuth, v1Router);
 

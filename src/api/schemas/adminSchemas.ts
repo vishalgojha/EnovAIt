@@ -6,7 +6,17 @@ const IntegrationTypeSchema = z.enum([
   "webhook",
   "iot",
   "whatsapp_baileys",
-  "whatsapp_official"
+  "whatsapp_official",
+  "email",
+  "slack",
+  "msteams",
+  "web_widget",
+  "mobile_sdk",
+  "sms",
+  "voice_ivr",
+  "iot_mqtt",
+  "erp_crm",
+  "api_partner"
 ]);
 
 export const UpsertModuleSchema = z.object({

@@ -24,7 +24,7 @@ begin
     create type public.report_type as enum ('esg_summary', 'operations_dashboard', 'compliance_checklist', 'custom');
   end if;
   if not exists (select 1 from pg_type where typname = 'integration_type') then
-    create type public.integration_type as enum ('excel', 'api', 'webhook', 'iot', 'whatsapp_baileys', 'whatsapp_official');
+    create type public.integration_type as enum ('excel', 'api', 'webhook', 'iot', 'whatsapp_baileys', 'whatsapp_official', 'email', 'slack', 'msteams', 'web_widget', 'mobile_sdk', 'sms', 'voice_ivr', 'iot_mqtt', 'erp_crm', 'api_partner');
   end if;
   if not exists (select 1 from pg_type where typname = 'notification_channel') then
     create type public.notification_channel as enum ('in_app', 'email', 'webhook');
@@ -618,4 +618,5 @@ with check (org_id = public.current_org_id());
 
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
+
 

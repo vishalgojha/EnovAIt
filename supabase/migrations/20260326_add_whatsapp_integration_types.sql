@@ -1,3 +1,13 @@
--- Add WhatsApp integration channels to integration_type enum
+-- Add extended channel integration values to integration_type enum
 alter type public.integration_type add value if not exists 'whatsapp_baileys';
 alter type public.integration_type add value if not exists 'whatsapp_official';
+alter type public.integration_type add value if not exists 'email';
+alter type public.integration_type add value if not exists 'slack';
+alter type public.integration_type add value if not exists 'msteams';
+alter type public.integration_type add value if not exists 'web_widget';
+alter type public.integration_type add value if not exists 'mobile_sdk';
+alter type public.integration_type add value if not exists 'sms';
+alter type public.integration_type add value if not exists 'voice_ivr';
+alter type public.integration_type add value if not exists 'iot_mqtt';
+alter type public.integration_type add value if not exists 'erp_crm';
+alter type public.integration_type add value if not exists 'api_partner';

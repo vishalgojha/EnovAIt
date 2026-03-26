@@ -29,6 +29,34 @@ const EnvSchema = z.object({
   WHATSAPP_META_API_VERSION: z.string().default("v22.0"),
   WHATSAPP_META_VERIFY_TOKEN: z.string().optional(),
 
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_CHANNEL_DEFAULT: z.string().optional(),
+  SLACK_WEBHOOK_URL: z.string().url().optional(),
+
+  MSTEAMS_WEBHOOK_URL: z.string().url().optional(),
+
+  EMAIL_SMTP_HOST: z.string().optional(),
+  EMAIL_SMTP_PORT: z.coerce.number().int().positive().default(587),
+  EMAIL_SMTP_USER: z.string().optional(),
+  EMAIL_SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_SMS_FROM: z.string().optional(),
+  TWILIO_VOICE_FROM: z.string().optional(),
+  TWILIO_VOICE_TWIML_URL: z.string().url().optional(),
+
+  IOT_MQTT_URL: z.string().optional(),
+  IOT_MQTT_USERNAME: z.string().optional(),
+  IOT_MQTT_PASSWORD: z.string().optional(),
+  IOT_MQTT_TOPIC_DEFAULT: z.string().optional(),
+
+  ERP_CRM_WEBHOOK_URL: z.string().url().optional(),
+  API_PARTNER_WEBHOOK_URL: z.string().url().optional(),
+
+  CHANNEL_WEBHOOK_TOKEN: z.string().optional(),
+
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),
   RATE_LIMIT_WINDOW_MS: z.coerce.number().int().positive().default(60000),
   RATE_LIMIT_MAX: z.coerce.number().int().positive().default(120),
