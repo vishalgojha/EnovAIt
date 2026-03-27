@@ -22,16 +22,29 @@ jobs:
           cache-dependency-path: packages/backend/package-lock.json
 
       - name: Install dependencies
-        run: cd packages/backend && npm ci
+        working-directory: packages/backend
+        run: npm ci --include=optional
+
+      - name: Ensure Rollup native optional dependency (Linux)
+        working-directory: packages/backend
+        run: |
+          if ! node -e "require.resolve('@rollup/rollup-linux-x64-gnu')" >/dev/null 2>&1; then
+            ROLLUP_VERSION=$(node -p "require('./node_modules/rollup/package.json').version")
+            npm i --no-save @rollup/rollup-linux-x64-gnu@$ROLLUP_VERSION
+          fi
 
       - name: Typecheck
-        run: cd packages/backend && npm run typecheck
+        working-directory: packages/backend
+        run: npm run typecheck
 
       - name: Test
-        run: cd packages/backend && npm run test
+        working-directory: packages/backend
+        run: npm run test
 
       - name: Build
-        run: cd packages/backend && npm run build
+        working-directory: packages/backend
+        run: npm run build
 
       - name: Production audit (critical only)
-        run: cd packages/backend && npm audit --omit=dev --audit-level=critical
+        working-directory: packages/backend
+        run: npm audit --omit=dev --audit-level=critical
