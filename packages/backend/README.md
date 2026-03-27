@@ -175,6 +175,20 @@ Protected (Supabase JWT required):
    - evaluate and trigger `workflow_rules`.
 6. Save assistant response (clarifying question or completion acknowledgement).
 
+## SFIL ESG Report Type (Trained Template)
+
+The seed now includes a default ESG annual template named:
+- `SFIL ESG Annual Report Intake (Food-People-Planet-Governance)`
+
+It is aligned to the report structure used in `SFIL-ESG Report 2023-24` with:
+- sectioned extraction (`food`, `people`, `planet`, `governance`)
+- KPI-focused highlights (Scope 1/2, intensity, training coverage, recycling, governance)
+- framework alignment (`BRSR`, `GRI`, `SASB`) and assurance summary fields
+
+To apply it:
+1. Run `supabase/seed/seed.sql` again.
+2. Start an ESG chat session; the default active ESG template will be this annual profile.
+
 ## Notes for Production Hardening
 
 - Add provider adapters for Anthropic/Grok in `src/services/ai`.

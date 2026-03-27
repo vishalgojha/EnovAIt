@@ -1,5 +1,32 @@
 import type { ExtractionInput } from "./types.js";
 
+const safeStringArray = (value: unknown): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+};
+
+const extractTemplateHints = (templateSchema: Record<string, unknown> | undefined): {
+  requiredFields: string[];
+  reportProfile: Record<string, unknown> | null;
+} => {
+  if (!templateSchema || typeof templateSchema !== "object") {
+    return { requiredFields: [], reportProfile: null };
+  }
+
+  const requiredFields = safeStringArray(templateSchema.required);
+
+  const rawProfile = templateSchema.x_report_profile;
+  const reportProfile =
+    rawProfile && typeof rawProfile === "object" && !Array.isArray(rawProfile)
+      ? (rawProfile as Record<string, unknown>)
+      : null;
+
+  return { requiredFields, reportProfile };
+};
+
 export const extractionOutputJsonSchema = {
   type: "object",
   additionalProperties: false,
@@ -37,13 +64,23 @@ export const extractionOutputJsonSchema = {
 } as const;
 
 export const buildExtractionSystemPrompt = (input: ExtractionInput): string => {
+  const hints = extractTemplateHints(input.templateSchema);
+
   return [
     "You are EnovAIt's enterprise data extraction engine.",
     "Convert conversational input into accurate structured JSON.",
     "Never hallucinate values. If unknown, keep field missing and ask a clarifying question.",
     `Module: ${input.moduleName} (${input.moduleCode}).`,
+    hints.requiredFields.length
+      ? `Template required fields: ${JSON.stringify(hints.requiredFields)}.`
+      : "Template required fields: [] (infer from context).",
+    hints.reportProfile
+      ? `Report profile instructions: ${JSON.stringify(hints.reportProfile)}.`
+      : "Report profile instructions: none.",
     `Template schema: ${JSON.stringify(input.templateSchema ?? {})}`,
     `Question flow: ${JSON.stringify(input.questionFlow ?? [])}`,
+    "If question_flow includes an id, keep missing_fields in that exact id format (use dot-notation when provided).",
+    "When template fields are nested objects, preserve nesting in extracted_fields.",
     "Return only schema-compliant JSON."
   ].join("\\n");
 };
