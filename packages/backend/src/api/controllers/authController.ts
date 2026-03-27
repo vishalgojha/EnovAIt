@@ -94,6 +94,7 @@ const fetchAuthProfile = async (accessToken: string) => {
 export const authController = {
   async signUp(req: Request, res: Response) {
     const payload = SignUpSchema.parse(req.body);
+    const orgSlug = await resolveUniqueOrgSlug(payload.company_name);
 
     const { data: createdAuthUser, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email: payload.email,
@@ -111,8 +112,6 @@ export const authController = {
       }
       throw new AppError("Failed to create auth user", 500, "AUTH_SIGNUP_FAILED", createUserError);
     }
-
-    const orgSlug = await resolveUniqueOrgSlug(payload.company_name);
 
     const { data: org, error: orgError } = await supabaseAdmin
       .from("organizations")
