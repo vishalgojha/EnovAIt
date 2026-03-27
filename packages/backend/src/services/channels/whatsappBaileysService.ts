@@ -13,6 +13,7 @@ type BaileysSocketLike = {
 
 let socketPromise: Promise<BaileysSocketLike> | null = null;
 let lastConnectionState = "disconnected";
+let isBaileysAvailable = true;
 
 const normalizeJid = (value: string): string => {
   if (value.includes("@")) {
@@ -28,13 +29,22 @@ const normalizeJid = (value: string): string => {
 };
 
 const getOrCreateSocket = async (): Promise<BaileysSocketLike> => {
+  if (!isBaileysAvailable) {
+    throw new AppError(
+      "WhatsApp Baileys is not installed in this deployment. Use whatsapp_official channel or install @whiskeysockets/baileys.",
+      503,
+      "WHATSAPP_BAILEYS_NOT_INSTALLED"
+    );
+  }
+
   if (socketPromise) {
     return socketPromise;
   }
 
   socketPromise = (async () => {
     try {
-      const baileysModule = await import("@whiskeysockets/baileys");
+      const moduleName = "@whiskeysockets/baileys";
+      const baileysModule = await import(moduleName);
       const makeWASocket = baileysModule.default as unknown as (params: {
         auth: unknown;
         printQRInTerminal: boolean;
@@ -64,6 +74,15 @@ const getOrCreateSocket = async (): Promise<BaileysSocketLike> => {
       return socket;
     } catch (error) {
       socketPromise = null;
+      if (error instanceof Error && /Cannot find package '@whiskeysockets\/baileys'/.test(error.message)) {
+        isBaileysAvailable = false;
+        throw new AppError(
+          "WhatsApp Baileys is not installed in this deployment. Use whatsapp_official channel or install @whiskeysockets/baileys.",
+          503,
+          "WHATSAPP_BAILEYS_NOT_INSTALLED",
+          error
+        );
+      }
       throw new AppError(
         "Failed to initialize WhatsApp Baileys client. Ensure @whiskeysockets/baileys is installed and QR login is completed.",
         500,
@@ -90,6 +109,15 @@ export const whatsappBaileysService = {
   },
 
   async getStatus(): Promise<{ provider: "baileys"; connected: boolean; connection_state: string; user_id: string | null }> {
+    if (!isBaileysAvailable) {
+      return {
+        provider: "baileys",
+        connected: false,
+        connection_state: "not_installed",
+        user_id: null
+      };
+    }
+
     const socket = await getOrCreateSocket();
 
     return {
