@@ -9,9 +9,12 @@ interface NotificationRow {
   user_id: string | null;
   channel: "in_app" | "email" | "webhook";
   status: "pending" | "sent" | "failed";
-  title: string;
-  body: string;
-  metadata: Record<string, unknown>;
+  title: string | null;
+  body: string | null;
+  metadata: Record<string, unknown> | null;
+  subject: string | null;
+  message: string | null;
+  payload: Record<string, unknown> | null;
   retry_count: number;
   user:
     | {
@@ -106,14 +109,16 @@ const markFailure = async (row: NotificationRow, error: unknown): Promise<void> 
 };
 
 const processOne = async (row: NotificationRow): Promise<void> => {
-  const metadata = parseMetadata(row.metadata);
+  const metadata = parseMetadata(row.metadata ?? row.payload);
+  const subject = row.title ?? row.subject ?? "Notification";
+  const message = row.body ?? row.message ?? "";
   const dispatchChannel = mapNotificationChannel(row.channel);
   const recipient = pickRecipient(row, metadata);
 
   await channelRegistry.send(dispatchChannel, {
     to: recipient,
-    subject: row.title,
-    message: row.body,
+    subject,
+    message,
     metadata: {
       ...metadata,
       notification_id: row.id,
@@ -133,7 +138,9 @@ const pollOnce = async (): Promise<void> => {
     const nowIso = new Date().toISOString();
     const { data, error } = await supabaseAdmin
       .from("notifications")
-      .select("id, org_id, user_id, channel, status, title, body, metadata, retry_count, user:users(email)")
+      .select(
+        "id, org_id, user_id, channel, status, title, body, metadata, subject, message, payload, retry_count, user:users(email)"
+      )
       .eq("status", "pending")
       .lte("scheduled_at", nowIso)
       .order("created_at", { ascending: true })

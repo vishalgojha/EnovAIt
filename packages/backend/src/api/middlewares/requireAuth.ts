@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 
 import { AppError } from "../../lib/errors.js";
-import { createUserSupabaseClient } from "../../lib/supabase.js";
+import { createUserSupabaseClient, supabaseAdmin } from "../../lib/supabase.js";
 
 export const requireAuth = async (req: Request, _res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -18,7 +18,7 @@ export const requireAuth = async (req: Request, _res: Response, next: NextFuncti
       throw new AppError("Invalid or expired access token", 401, "UNAUTHORIZED", authError);
     }
 
-    const { data: appUser, error } = await userClient
+    const { data: appUser, error } = await supabaseAdmin
       .from("users")
       .select("id, org_id, role, email")
       .eq("id", authUserData.user.id)

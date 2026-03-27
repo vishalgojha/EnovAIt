@@ -61,7 +61,7 @@ const fetchAuthProfile = async (accessToken: string) => {
     throw new AppError("Failed to resolve authenticated user", 401, "UNAUTHORIZED", authUserError ?? undefined);
   }
 
-  const { data: appUser, error: userError } = await userClient
+  const { data: appUser, error: userError } = await supabaseAdmin
     .from("users")
     .select("id, email, full_name, role, org_id")
     .eq("id", authUserId)
@@ -71,7 +71,7 @@ const fetchAuthProfile = async (accessToken: string) => {
     throw new AppError("No application user mapping found", 403, "USER_NOT_MAPPED", userError ?? undefined);
   }
 
-  const { data: org, error: orgError } = await userClient
+  const { data: org, error: orgError } = await supabaseAdmin
     .from("organizations")
     .select("id, name, slug, settings")
     .eq("id", appUser.org_id)
