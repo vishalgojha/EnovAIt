@@ -1,5 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import {
   Area,
   AreaChart,
@@ -12,6 +13,7 @@ import {
 import {
   Activity,
   AlertCircle,
+  ArrowRight,
   CheckCircle2,
   Clock,
   Database,
@@ -23,6 +25,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Progress, ProgressLabel, ProgressValue } from '@/components/ui/progress';
 import { dashboardApi } from '@/lib/api/endpoints';
 import { useAuthStore } from '@/lib/store/auth';
 import { cn } from '@/lib/utils';
@@ -36,8 +47,35 @@ const fallbackChartData = [
   { name: 'Jun', records: 0 },
 ];
 
+const onboardingSteps = [
+  {
+    title: 'Activate your modules',
+    description: 'Choose the modules your team will start with first, like ESG, Operations, or Compliance.',
+    highlights: ['Enable only the modules needed for your current reporting cycle.', 'Each module can be customized later without data loss.'],
+    path: '/dashboard/modules',
+    cta: 'Open Modules',
+  },
+  {
+    title: 'Create your first template',
+    description: 'Add a conversational template so teams can submit clean, structured records via chat.',
+    highlights: ['Start from an existing template and adapt fields quickly.', 'Templates reduce back-and-forth and improve data quality.'],
+    path: '/dashboard/templates',
+    cta: 'Open Templates',
+  },
+  {
+    title: 'Set your first workflow rule',
+    description: 'Automate what should happen when important records come in, like approvals or escalations.',
+    highlights: ['Begin with one high-impact trigger and iterate from there.', 'Notifications and tasks run automatically once enabled.'],
+    path: '/dashboard/workflow-rules',
+    cta: 'Open Workflow Rules',
+  },
+] as const;
+
 export function DashboardPage() {
-  const { tenant } = useAuthStore();
+  const navigate = useNavigate();
+  const { tenant, user } = useAuthStore();
+  const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [stepIndex, setStepIndex] = useState(0);
 
   const { data: overview, isLoading } = useQuery({
     queryKey: ['dashboard-overview', tenant?.id],
@@ -45,12 +83,61 @@ export function DashboardPage() {
     refetchInterval: 30_000,
   });
 
+  const onboardingStorageKey = useMemo(() => {
+    if (!user?.id) {
+      return null;
+    }
+    return `enovait:first-login:${user.id}:v1`;
+  }, [user?.id]);
+
   const chartData = useMemo(() => {
     if (!overview?.chartData?.length) {
       return fallbackChartData;
     }
     return overview.chartData;
   }, [overview?.chartData]);
+
+  useEffect(() => {
+    if (!onboardingStorageKey) {
+      setIsGuideOpen(false);
+      return;
+    }
+
+    const hasCompletedOnboarding = window.localStorage.getItem(onboardingStorageKey) === 'done';
+    if (!hasCompletedOnboarding) {
+      setStepIndex(0);
+      setIsGuideOpen(true);
+    }
+  }, [onboardingStorageKey]);
+
+  const activeOnboardingStep = onboardingSteps[stepIndex];
+  const onboardingProgress = ((stepIndex + 1) / onboardingSteps.length) * 100;
+  const isLastOnboardingStep = stepIndex === onboardingSteps.length - 1;
+
+  const markOnboardingDone = () => {
+    if (onboardingStorageKey) {
+      window.localStorage.setItem(onboardingStorageKey, 'done');
+    }
+    setIsGuideOpen(false);
+  };
+
+  const openGuide = () => {
+    setStepIndex(0);
+    setIsGuideOpen(true);
+  };
+
+  const goToOnboardingStep = () => {
+    markOnboardingDone();
+    navigate(activeOnboardingStep.path);
+  };
+
+  const goToNextStep = () => {
+    if (isLastOnboardingStep) {
+      markOnboardingDone();
+      return;
+    }
+    setStepIndex((previous) => previous + 1);
+  };
 
   const kpiCards = [
     {
@@ -96,6 +183,9 @@ export function DashboardPage() {
             <Server className="h-3.5 w-3.5" />
             {overview?.backendHealthy ? 'Backend Connected' : 'Backend Unreachable'}
           </Badge>
+          <Button variant="ghost" size="sm" onClick={openGuide}>
+            First Login Guide
+          </Button>
           <Button variant="outline" size="sm">
             <Clock className="mr-2 h-4 w-4" />
             Auto-refresh
@@ -205,6 +295,60 @@ export function DashboardPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={isGuideOpen} onOpenChange={setIsGuideOpen}>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Welcome to EnovAIt</DialogTitle>
+            <DialogDescription>
+              Let&rsquo;s complete a quick guided setup for {tenant?.name || 'your workspace'}.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Progress value={onboardingProgress}>
+            <ProgressLabel>
+              Step {stepIndex + 1} of {onboardingSteps.length}
+            </ProgressLabel>
+            <ProgressValue>{Math.round(onboardingProgress)}%</ProgressValue>
+          </Progress>
+
+          <div className="rounded-lg border bg-muted/40 p-4 space-y-3">
+            <h3 className="text-sm font-semibold">{activeOnboardingStep.title}</h3>
+            <p className="text-sm text-muted-foreground">{activeOnboardingStep.description}</p>
+            <ul className="space-y-1.5 text-xs text-muted-foreground">
+              {activeOnboardingStep.highlights.map((highlight) => (
+                <li key={highlight} className="flex items-start gap-2">
+                  <span className="mt-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                  <span>{highlight}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <DialogFooter className="sm:justify-between">
+            <Button variant="ghost" onClick={() => setIsGuideOpen(false)}>
+              Remind me later
+            </Button>
+
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setStepIndex((previous) => Math.max(previous - 1, 0))}
+                disabled={stepIndex === 0}
+              >
+                Previous
+              </Button>
+              <Button variant="outline" onClick={goToNextStep}>
+                {isLastOnboardingStep ? 'Finish' : 'Next'}
+              </Button>
+              <Button onClick={goToOnboardingStep}>
+                {activeOnboardingStep.cta}
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

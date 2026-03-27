@@ -15,6 +15,15 @@ interface ApiEnvelope<T> {
   data: T;
 }
 
+interface RawModule {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  config: Record<string, unknown>;
+  is_active: boolean;
+}
+
 interface AuthResult {
   token: string;
   user: User;
@@ -47,6 +56,42 @@ export interface DashboardOverview {
     time: string;
   }>;
 }
+
+const mapRawModuleToUiModule = (module: RawModule): Module => ({
+  id: module.id,
+  code: module.code,
+  name: module.name,
+  description: module.description,
+  config: module.config ?? {},
+  status: module.is_active ? 'active' : 'inactive',
+});
+
+const mapUiModuleToRawPayload = (
+  data: Partial<Module> & { is_active?: boolean }
+): Partial<RawModule> => {
+  const payload: Partial<RawModule> = {};
+
+  if (data.code !== undefined) {
+    payload.code = data.code;
+  }
+  if (data.name !== undefined) {
+    payload.name = data.name;
+  }
+  if (data.description !== undefined) {
+    payload.description = data.description;
+  }
+  if (data.config !== undefined) {
+    payload.config = data.config;
+  }
+
+  if (data.status !== undefined) {
+    payload.is_active = data.status === 'active';
+  } else if (data.is_active !== undefined) {
+    payload.is_active = data.is_active;
+  }
+
+  return payload;
+};
 
 const formatRelativeTime = (iso: string): string => {
   const ts = new Date(iso).getTime();
@@ -95,12 +140,20 @@ const buildRecordsChart = (records: DataRecord[]): Array<{ name: string; records
 
 export const adminApi = {
   // Modules
-  getModules: async () => (await api.get<ApiEnvelope<Module[]>>('/admin/modules')).data,
-  createModule: (data: Partial<Module>) => api.post<Module>('/admin/modules', data),
-  updateModule: async (id: string, data: Partial<Module>) =>
-    (await api.put<ApiEnvelope<Module>>(`/admin/modules/${id}`, data)).data,
+  getModules: async (): Promise<Module[]> => {
+    const modules = await api.get<ApiEnvelope<RawModule[]>>('/admin/modules');
+    return modules.data.map(mapRawModuleToUiModule);
+  },
+  createModule: async (data: Partial<Module>): Promise<Module> => {
+    const created = await api.post<ApiEnvelope<RawModule>>('/admin/modules', mapUiModuleToRawPayload(data));
+    return mapRawModuleToUiModule(created.data);
+  },
+  updateModule: async (id: string, data: Partial<Module>): Promise<Module> => {
+    const updated = await api.put<ApiEnvelope<RawModule>>(`/admin/modules/${id}`, mapUiModuleToRawPayload(data));
+    return mapRawModuleToUiModule(updated.data);
+  },
   deleteModule: async (id: string) =>
-    (await api.put<ApiEnvelope<Module>>(`/admin/modules/${id}`, { status: 'inactive' })).data,
+    (await api.put<ApiEnvelope<RawModule>>(`/admin/modules/${id}`, { is_active: false })).data,
 
   // Templates
   getTemplates: async () => (await api.get<ApiEnvelope<Template[]>>('/admin/templates')).data,

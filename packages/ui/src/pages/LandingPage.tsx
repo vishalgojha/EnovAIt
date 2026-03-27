@@ -1,10 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   Zap, 
   Shield, 
-  Layers, 
-  Cpu, 
   Globe, 
   MessageSquare, 
   ArrowRight, 
@@ -13,12 +11,26 @@ import {
   Github,
   Twitter,
   Linkedin,
-  FileText
+  FileText,
+  Sparkles,
+  BellRing,
+  BadgeCheck,
+  Bot,
+  User
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 const features = [
@@ -85,7 +97,96 @@ const pricing = [
   },
 ];
 
+const demoScenarios = {
+  esg: {
+    label: 'ESG',
+    title: 'Scope 2 Emissions Spike at Pune Plant',
+    context:
+      'A plant manager sends utility updates over WhatsApp. EnovAIt detects an intensity jump versus baseline and triggers review.',
+    conversation: [
+      { role: 'user', text: 'Pune Plant electricity for March: 4,82,000 kWh. Production: 10,600 MT.' },
+      { role: 'assistant', text: 'Captured. Last month was 3,61,000 kWh for 10,900 MT. Please confirm if any new lines ran this month.' },
+      { role: 'user', text: 'Yes, Line-3 commissioning trial ran for 9 days.' },
+      { role: 'assistant', text: 'Logged. I marked this as a high-variance energy event and created an approval workflow for ESG lead.' },
+    ],
+    extracted: [
+      'facility: Pune Plant',
+      'period: 2026-03',
+      'electricity_kwh: 482000',
+      'production_mt: 10600',
+      'energy_intensity_kwh_per_mt: 45.47',
+      'variance_vs_baseline: +31.6%',
+      'variance_reason: line_commissioning_trial',
+    ],
+    outcomes: [
+      'Workflow: Pending approval from ESG lead',
+      'Notification sent to Sustainability + Operations heads',
+      'BRSR narrative draft updated with contextual explanation',
+    ],
+    reportPreview: 'BRSR Section B, Principle 6 now includes energy anomaly context and corrective action trail.',
+  },
+  operations: {
+    label: 'Operations',
+    title: 'Maintenance Escalation from Voice Transcript',
+    context:
+      'Site supervisor logs a safety-critical compressor issue by voice. EnovAIt extracts structured fields and routes for immediate action.',
+    conversation: [
+      { role: 'user', text: 'Night shift report: compressor C-12 temperature crossed 102C twice. Temporary cooldown done.' },
+      { role: 'assistant', text: 'Noted. Was production impacted and is there a recurring pattern from the last 7 days?' },
+      { role: 'user', text: 'Production slowed by 18 minutes. Same alarm happened two times this week.' },
+      { role: 'assistant', text: 'Understood. Severity set to High. Escalation task opened for maintenance manager with SLA of 2 hours.' },
+    ],
+    extracted: [
+      'asset_id: C-12',
+      'issue_type: overheating',
+      'max_temperature_c: 102',
+      'production_delay_minutes: 18',
+      'recurrence_count_7d: 2',
+      'severity: high',
+      'sla_hours: 2',
+    ],
+    outcomes: [
+      'Workflow: Escalated to maintenance manager',
+      'Auto-generated task checklist for root cause analysis',
+      'Operations dashboard KPI adjusted in real time',
+    ],
+    reportPreview: 'Daily operations digest now highlights C-12 as risk item with action owner and ETA.',
+  },
+  compliance: {
+    label: 'Compliance',
+    title: 'Policy Breach Near-Miss Captured in Teams',
+    context:
+      'Compliance officer reports a vendor waste-disposal discrepancy. EnovAIt links evidence and starts approval/escalation chain.',
+    conversation: [
+      { role: 'user', text: 'Vendor manifest says 12 drums disposed, weighbridge slip shows 9. Need urgent validation.' },
+      { role: 'assistant', text: 'Received. Please share manifest reference id and disposal date.' },
+      { role: 'user', text: 'Manifest WF-8821, date 2026-03-18.' },
+      { role: 'assistant', text: 'Logged as compliance discrepancy. Legal + plant admin notified and investigation workflow started.' },
+    ],
+    extracted: [
+      'manifest_id: WF-8821',
+      'date: 2026-03-18',
+      'declared_disposal_drums: 12',
+      'verified_disposal_drums: 9',
+      'mismatch_count: 3',
+      'risk_level: critical',
+      'evidence_links: 2',
+    ],
+    outcomes: [
+      'Workflow: Critical compliance review initiated',
+      'Escalation to legal counsel and plant administration',
+      'Audit trail locked with immutable event history',
+    ],
+    reportPreview: 'Compliance dashboard now shows open discrepancy with evidence bundle and owner timeline.',
+  },
+} as const;
+
 export function LandingPage() {
+  const [isDemoOpen, setIsDemoOpen] = useState(false);
+  const scenarioEntries = Object.entries(demoScenarios) as Array<
+    [keyof typeof demoScenarios, (typeof demoScenarios)[keyof typeof demoScenarios]]
+  >;
+
   return (
     <div className="min-h-screen bg-background selection:bg-primary/10">
       {/* Navigation */}
@@ -143,7 +244,12 @@ export function LandingPage() {
                   <ArrowRight className="w-4 h-4" />
                 </Button>
               </Link>
-              <Button variant="outline" size="lg" className="h-12 px-8 text-base gap-2">
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-12 px-8 text-base gap-2"
+                onClick={() => setIsDemoOpen(true)}
+              >
                 <Play className="w-4 h-4 fill-current" />
                 Watch Demo
               </Button>
@@ -307,12 +413,140 @@ export function LandingPage() {
                 Start spotting issues today
               </Button>
             </Link>
-            <Button size="lg" variant="outline" className="h-12 px-8 text-base bg-transparent border-white/20 hover:bg-white/10 text-white">
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-12 px-8 text-base bg-transparent border-white/20 hover:bg-white/10 text-white"
+              onClick={() => setIsDemoOpen(true)}
+            >
               Book a 15-min demo
             </Button>
           </div>
         </div>
       </section>
+
+      <Dialog open={isDemoOpen} onOpenChange={setIsDemoOpen}>
+        <DialogContent className="sm:max-w-5xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" />
+              EnovAIt Contextual Demo
+            </DialogTitle>
+            <DialogDescription>
+              See how natural conversation turns into structured records, workflows, and audit-ready outputs in minutes.
+            </DialogDescription>
+          </DialogHeader>
+
+          <Tabs defaultValue="esg" className="gap-4">
+            <TabsList className="w-full justify-start">
+              {scenarioEntries.map(([key, scenario]) => (
+                <TabsTrigger key={key} value={key}>
+                  {scenario.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+
+            {scenarioEntries.map(([key, scenario]) => (
+              <TabsContent key={key} value={key} className="space-y-4">
+                <div className="grid gap-4 lg:grid-cols-5">
+                  <Card className="lg:col-span-3">
+                    <CardHeader>
+                      <CardTitle className="text-base">{scenario.title}</CardTitle>
+                      <CardDescription>{scenario.context}</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {scenario.conversation.map((message, index) => (
+                        <div
+                          key={`${scenario.label}-message-${index}`}
+                          className={cn(
+                            'flex gap-3 rounded-lg border p-3',
+                            message.role === 'assistant' ? 'bg-primary/5 border-primary/20' : 'bg-muted/30',
+                          )}
+                        >
+                          <div className="mt-0.5">
+                            {message.role === 'assistant' ? (
+                              <Bot className="h-4 w-4 text-primary" />
+                            ) : (
+                              <User className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="text-[11px] uppercase tracking-wider text-muted-foreground mb-1">
+                              {message.role === 'assistant' ? 'EnovAIt AI' : 'Operator'}
+                            </p>
+                            <p className="text-sm leading-relaxed">{message.text}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+
+                  <div className="lg:col-span-2 space-y-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <BadgeCheck className="h-4 w-4 text-primary" />
+                          Structured Extraction
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2">
+                        {scenario.extracted.map((field) => (
+                          <div key={field} className="rounded-md bg-muted/40 px-2.5 py-1.5 text-xs font-mono">
+                            {field}
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm flex items-center gap-2">
+                          <BellRing className="h-4 w-4 text-primary" />
+                          Automated Outcomes
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 text-sm">
+                        {scenario.outcomes.map((outcome) => (
+                          <div key={outcome} className="flex gap-2">
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 text-primary shrink-0" />
+                            <span>{outcome}</span>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+
+                <Card className="border-primary/20 bg-primary/5">
+                  <CardContent className="p-4 text-sm">
+                    <p className="font-medium mb-1">Report Impact</p>
+                    <p className="text-muted-foreground">{scenario.reportPreview}</p>
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            ))}
+          </Tabs>
+
+          <DialogFooter>
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:justify-between">
+              <Button variant="ghost" onClick={() => setIsDemoOpen(false)}>
+                Close Demo
+              </Button>
+              <div className="flex gap-2">
+                <Link to="/login">
+                  <Button variant="outline">Try Login</Button>
+                </Link>
+                <Link to="/signup">
+                  <Button>
+                    Start Free Trial
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Footer */}
       <footer className="py-12 px-6 border-t">
@@ -369,4 +603,3 @@ export function LandingPage() {
     </div>
   );
 }
-
