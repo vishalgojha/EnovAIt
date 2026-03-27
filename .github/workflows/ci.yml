@@ -23,13 +23,18 @@ jobs:
 
       - name: Install dependencies
         working-directory: packages/backend
-        run: npm ci --include=optional
+        run: npm ci --include=dev --include=optional
 
       - name: Ensure Rollup native optional dependency (Linux)
         working-directory: packages/backend
         run: |
           if ! node -e "require.resolve('@rollup/rollup-linux-x64-gnu')" >/dev/null 2>&1; then
-            ROLLUP_VERSION=$(node -p "require('./node_modules/rollup/package.json').version")
+            if node -e "require.resolve('rollup/package.json')" >/dev/null 2>&1; then
+              ROLLUP_VERSION=$(node -p "require('rollup/package.json').version")
+            else
+              ROLLUP_VERSION=$(npm view rollup version)
+              npm i --no-save rollup@$ROLLUP_VERSION
+            fi
             npm i --no-save @rollup/rollup-linux-x64-gnu@$ROLLUP_VERSION
           fi
 
