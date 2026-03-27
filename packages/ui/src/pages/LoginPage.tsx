@@ -2,7 +2,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -97,9 +97,17 @@ export function LoginPage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </Button>
+            <div className="w-full space-y-3">
+              <Button className="w-full" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Signing in...' : 'Sign in'}
+              </Button>
+              <p className="text-xs text-muted-foreground text-center">
+                New to EnovAIt?{' '}
+                <Link to="/signup" className="text-primary hover:underline">
+                  Create account
+                </Link>
+              </p>
+            </div>
           </CardFooter>
         </form>
       </Card>

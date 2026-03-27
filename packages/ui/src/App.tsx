@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { DashboardPage } from '@/pages/DashboardPage';
 import { LoginPage } from '@/pages/LoginPage';
+import { SignupPage } from '@/pages/SignupPage';
 import { LandingPage } from '@/pages/LandingPage';
 import { ModulesPage } from '@/pages/ModulesPage';
 import { TemplatesPage } from '@/pages/TemplatesPage';
@@ -45,6 +46,7 @@ export default function App() {
             <Routes>
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
+              <Route path="/signup" element={<SignupPage />} />
               
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardPage />} />

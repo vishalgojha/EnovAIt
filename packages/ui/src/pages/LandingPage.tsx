@@ -106,7 +106,7 @@ export function LandingPage() {
             <Link to="/login">
               <Button variant="ghost" size="sm">Log in</Button>
             </Link>
-            <Link to="/login">
+            <Link to="/signup">
               <Button size="sm">Get Started</Button>
             </Link>
           </div>
@@ -137,7 +137,7 @@ export function LandingPage() {
               Your reports write themselves. Your gaps surface in real time.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/login">
+              <Link to="/signup">
                 <Button size="lg" className="h-12 px-8 text-base gap-2">
                   Start spotting issues today
                   <ArrowRight className="w-4 h-4" />
@@ -302,7 +302,7 @@ export function LandingPage() {
             Start your 14-day free trial — no credit card required.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 relative">
-            <Link to="/login">
+            <Link to="/signup">
               <Button size="lg" variant="secondary" className="h-12 px-8 text-base">
                 Start spotting issues today
               </Button>
@@ -369,5 +369,4 @@ export function LandingPage() {
     </div>
   );
 }
-
 
