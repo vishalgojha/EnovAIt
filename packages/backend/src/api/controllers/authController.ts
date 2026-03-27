@@ -54,11 +54,17 @@ const resolveUniqueOrgSlug = async (baseName: string): Promise<string> => {
 
 const fetchAuthProfile = async (accessToken: string) => {
   const userClient = createUserSupabaseClient(accessToken);
+  const { data: authUserData, error: authUserError } = await userClient.auth.getUser(accessToken);
+  const authUserId = authUserData.user?.id;
+
+  if (authUserError || !authUserId) {
+    throw new AppError("Failed to resolve authenticated user", 401, "UNAUTHORIZED", authUserError ?? undefined);
+  }
 
   const { data: appUser, error: userError } = await userClient
     .from("users")
     .select("id, email, full_name, role, org_id")
-    .eq("id", (await userClient.auth.getUser()).data.user?.id ?? "")
+    .eq("id", authUserId)
     .single();
 
   if (userError || !appUser) {
