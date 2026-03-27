@@ -1,7 +1,8 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, 
+  RefreshCw,
   Search, 
   GitBranch, 
   Play, 
@@ -33,20 +34,35 @@ import {
 import { adminApi } from '@/lib/api/endpoints';
 import { WorkflowRule } from '@/types';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export function WorkflowRulesPage() {
+  const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
 
-  const { data: rules, isLoading } = useQuery({
+  const {
+    data: rules = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching
+  } = useQuery({
     queryKey: ['workflow-rules'],
     queryFn: adminApi.getWorkflowRules,
-    initialData: [
-      { id: 'r1', module_id: 'm1', name: 'High Severity Approval', trigger_event: 'record.completed', condition: { path: 'severity', operator: 'eq', value: 'high' }, action: { state: 'pending' }, priority: 10, is_active: true },
-      { id: 'r2', module_id: 'm2', name: 'Escalate Critical', trigger_event: 'record.completed', condition: { path: 'severity', operator: 'eq', value: 'critical' }, action: { state: 'escalated' }, priority: 20, is_active: true },
-    ] as WorkflowRule[],
   });
 
-  const filteredRules = rules?.filter(r => 
+  const toggleMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: string; is_active: boolean }) =>
+      adminApi.updateWorkflowRule(id, { is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workflow-rules'] });
+      toast.success('Workflow rule updated');
+    },
+    onError: () => toast.error('Failed to update workflow rule'),
+  });
+
+  const filteredRules = rules.filter(r => 
     r.name.toLowerCase().includes(search.toLowerCase()) || 
     r.trigger_event.toLowerCase().includes(search.toLowerCase())
   );
@@ -74,10 +90,36 @@ export function WorkflowRulesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+        </Button>
       </div>
 
-      <div className="grid gap-4">
-        {filteredRules?.map((rule) => (
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">Loading workflow rules...</CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="p-8 space-y-2">
+            <p className="text-sm text-destructive">Failed to load workflow rules.</p>
+            <p className="text-xs text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please retry.'}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredRules.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">
+            No workflow rules found.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4">
+          {filteredRules.map((rule) => (
           <Card key={rule.id} className="group overflow-hidden">
             <CardContent className="p-0">
               <div className="flex items-center p-4 gap-4">
@@ -110,7 +152,13 @@ export function WorkflowRulesPage() {
                 <div className="flex items-center gap-4">
                   <div className="flex flex-col items-end gap-1">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">Status</span>
-                    <Switch checked={rule.is_active} />
+                    <Switch
+                      checked={rule.is_active}
+                      disabled={toggleMutation.isPending && toggleMutation.variables?.id === rule.id}
+                      onCheckedChange={(checked) =>
+                        toggleMutation.mutate({ id: rule.id, is_active: checked })
+                      }
+                    />
                   </div>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
@@ -138,8 +186,9 @@ export function WorkflowRulesPage() {
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -17,16 +17,7 @@ import { DataRecordsPage } from '@/pages/DataRecordsPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { ChannelsConsolePage } from '@/pages/ChannelsConsolePage';
-
-// Placeholder pages for other modules
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="space-y-6">
-    <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
-    <div className="p-8 border-2 border-dashed rounded-lg flex items-center justify-center text-muted-foreground">
-      Module implementation for {title} coming soon...
-    </div>
-  </div>
-);
+import { SettingsPage } from '@/pages/SettingsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -62,7 +53,7 @@ export default function App() {
                 <Route path="workflows" element={<WorkflowsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="channels" element={<ChannelsConsolePage />} />
-                <Route path="settings" element={<PlaceholderPage title="Settings" />} />
+                <Route path="settings" element={<SettingsPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

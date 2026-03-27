@@ -5,12 +5,8 @@ import {
   Search, 
   FileText, 
   Download, 
-  MoreVertical,
-  BarChart3,
-  Calendar,
-  Clock,
-  CheckCircle2,
   RefreshCw,
+  MoreVertical,
   FilePieChart,
   FileBarChart,
   FileSearch
@@ -38,7 +34,7 @@ import { Report } from '@/types';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
 
-const reportTypeIcons: Record<string, any> = {
+const reportTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   esg_summary: FilePieChart,
   operations_dashboard: FileBarChart,
   compliance_checklist: FileSearch,
@@ -48,20 +44,25 @@ const reportTypeIcons: Record<string, any> = {
 export function ReportsPage() {
   const [search, setSearch] = React.useState('');
 
-  const { data: reports, isLoading } = useQuery({
+  const {
+    data: reports = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching
+  } = useQuery({
     queryKey: ['reports'],
     queryFn: reportApi.getReports,
-    initialData: [
-      { id: 'REP-001', title: 'Monthly ESG Summary', report_type: 'esg_summary', status: 'generated', generated_at: '2024-03-01T00:00:00Z' },
-      { id: 'REP-002', title: 'Operations Dashboard Snapshot', report_type: 'operations_dashboard', status: 'generated', generated_at: '2024-03-15T10:00:00Z' },
-      { id: 'REP-003', title: 'Compliance Checklist', report_type: 'compliance_checklist', status: 'generated', generated_at: '2024-03-26T11:00:00Z' },
-    ] as Report[],
   });
 
-  const filteredReports = reports?.filter(r => 
+  const filteredReports = reports.filter(r => 
     r.title.toLowerCase().includes(search.toLowerCase()) || 
     r.report_type.toLowerCase().includes(search.toLowerCase())
   );
+
+  const generatedCount = reports.filter((report) => report.status === 'generated').length;
+  const inProgressCount = reports.filter((report) => report.status !== 'generated').length;
 
   return (
     <div className="space-y-6">
@@ -77,32 +78,30 @@ export function ReportsPage() {
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-primary text-primary-foreground">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-80">Total Reports</CardTitle>
-            <div className="text-3xl font-bold">128</div>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Total Reports</CardTitle>
+            <div className="text-3xl font-bold">{reports.length}</div>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs opacity-70">+12 from last month</p>
-          </CardContent>
+          <CardContent />
         </Card>
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Ready to Download</CardTitle>
-            <div className="text-3xl font-bold">115</div>
+            <div className="text-3xl font-bold">{generatedCount}</div>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">90% of all generated</p>
+            <p className="text-xs text-muted-foreground">
+              {reports.length > 0 ? `${Math.round((generatedCount / reports.length) * 100)}% of all reports` : 'No reports yet'}
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Scheduled</CardTitle>
-            <div className="text-3xl font-bold">8</div>
+            <CardTitle className="text-sm font-medium text-muted-foreground">In Progress</CardTitle>
+            <div className="text-3xl font-bold">{inProgressCount}</div>
           </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">Automated weekly/monthly</p>
-          </CardContent>
+          <CardContent />
         </Card>
       </div>
 
@@ -116,10 +115,34 @@ export function ReportsPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+        </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredReports?.map((report) => {
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">Loading reports...</CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="p-8 space-y-2">
+            <p className="text-sm text-destructive">Failed to load reports.</p>
+            <p className="text-xs text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please retry.'}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredReports.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">No reports found.</CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredReports.map((report) => {
           const Icon = reportTypeIcons[report.report_type] || FileText;
           return (
             <Card key={report.id} className="group overflow-hidden">
@@ -177,8 +200,9 @@ export function ReportsPage() {
               </CardFooter>
             </Card>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

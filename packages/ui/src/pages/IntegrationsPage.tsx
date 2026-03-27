@@ -1,101 +1,151 @@
 import React from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Plus, 
-  Search, 
-  MoreVertical, 
-  ExternalLink, 
-  RefreshCw,
-  CheckCircle2,
-  XCircle,
-  AlertCircle,
-  Settings2,
-  Trash2
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-  CardFooter 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, CheckCircle2, MoreVertical, Plus, RefreshCw, Settings2, Trash2, XCircle } from 'lucide-react';
+
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { adminApi } from '@/lib/api/endpoints';
+import { cn } from '@/lib/utils';
 import { Integration, IntegrationType } from '@/types';
 import { toast } from 'sonner';
 
-const integrationIcons: Record<string, string> = {
-  whatsapp_official: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
-  whatsapp_baileys: 'https://cdn-icons-png.flaticon.com/512/733/733585.png',
-  email: 'https://cdn-icons-png.flaticon.com/512/732/732200.png',
-  slack: 'https://cdn-icons-png.flaticon.com/512/3800/3800024.png',
-  msteams: 'https://cdn-icons-png.flaticon.com/512/906/906349.png',
-  sms: 'https://cdn-icons-png.flaticon.com/512/1077/1077976.png',
-  voice_ivr: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
-  iot_mqtt: 'https://cdn-icons-png.flaticon.com/512/2103/2103633.png',
-  erp_crm: 'https://cdn-icons-png.flaticon.com/512/1055/1055644.png',
-  api_partner: 'https://cdn-icons-png.flaticon.com/512/2103/2103633.png',
-  web_widget: 'https://cdn-icons-png.flaticon.com/512/1055/1055644.png',
-  mobile_sdk: 'https://cdn-icons-png.flaticon.com/512/1055/1055644.png',
+const integrationOptions: Array<{ value: IntegrationType; label: string }> = [
+  { value: 'whatsapp_official', label: 'WhatsApp Official' },
+  { value: 'whatsapp_baileys', label: 'WhatsApp Baileys' },
+  { value: 'email', label: 'Email' },
+  { value: 'slack', label: 'Slack' },
+  { value: 'msteams', label: 'Microsoft Teams' },
+  { value: 'sms', label: 'SMS' },
+  { value: 'voice_ivr', label: 'Voice IVR' },
+  { value: 'iot_mqtt', label: 'IoT MQTT' },
+  { value: 'erp_crm', label: 'ERP / CRM' },
+  { value: 'api_partner', label: 'API Partner' },
+];
+
+const toStatusTone = (status: Integration['status']) => {
+  if (status === 'active') {
+    return {
+      icon: CheckCircle2,
+      iconClassName: 'text-green-500',
+      textClassName: 'text-green-500',
+    };
+  }
+
+  if (status === 'error') {
+    return {
+      icon: XCircle,
+      iconClassName: 'text-destructive',
+      textClassName: 'text-destructive',
+    };
+  }
+
+  return {
+    icon: AlertCircle,
+    iconClassName: 'text-muted-foreground',
+    textClassName: 'text-muted-foreground',
+  };
 };
 
 export function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
+  const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [newIntegration, setNewIntegration] = React.useState<{
+    name: string;
+    type: IntegrationType;
+    isActive: boolean;
+  }>({
+    name: '',
+    type: 'api_partner',
+    isActive: true,
+  });
 
-  const { data: integrations, isLoading } = useQuery({
+  const {
+    data: integrations = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+  } = useQuery({
     queryKey: ['integrations'],
     queryFn: adminApi.getIntegrations,
-    // Mock data if API fails
-    initialData: [
-      { id: 'i1', type: 'whatsapp_official', name: 'WhatsApp Business API', status: 'active', config: {}, lastSync: '2024-03-25T10:00:00Z' },
-      { id: 'i2', type: 'slack', name: 'Slack Notifications', status: 'active', config: {}, lastSync: '2024-03-25T11:30:00Z' },
-      { id: 'i3', type: 'email', name: 'SendGrid SMTP', status: 'error', config: {}, lastSync: '2024-03-24T15:00:00Z' },
-      { id: 'i4', type: 'erp_crm', name: 'Salesforce Sync', status: 'inactive', config: {}, lastSync: '2024-03-20T09:00:00Z' },
-    ] as Integration[],
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: adminApi.deleteIntegration,
+  const createMutation = useMutation({
+    mutationFn: () =>
+      adminApi.createIntegration({
+        name: newIntegration.name.trim(),
+        type: newIntegration.type,
+        status: newIntegration.isActive ? 'active' : 'inactive',
+        config: {},
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['integrations'] });
-      toast.success('Integration deleted successfully');
+      toast.success('Integration created');
+      setIsCreateOpen(false);
+      setNewIntegration({
+        name: '',
+        type: 'api_partner',
+        isActive: true,
+      });
     },
-    onError: () => toast.error('Failed to delete integration'),
+    onError: (mutationError: unknown) => {
+      const message =
+        typeof mutationError === 'object' &&
+        mutationError &&
+        'response' in mutationError &&
+        typeof (mutationError as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message === 'string'
+          ? (mutationError as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
+          : 'Failed to create integration';
+      toast.error(message);
+    },
   });
 
-  const filteredIntegrations = integrations?.filter(i => 
-    i.name.toLowerCase().includes(search.toLowerCase()) || 
-    i.type.toLowerCase().includes(search.toLowerCase())
+  const disableMutation = useMutation({
+    mutationFn: (id: string) => adminApi.deleteIntegration(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      toast.success('Integration disabled');
+    },
+    onError: () => toast.error('Failed to disable integration'),
+  });
+
+  const filteredIntegrations = integrations.filter(
+    (integration) =>
+      integration.name.toLowerCase().includes(search.toLowerCase()) ||
+      integration.type.toLowerCase().includes(search.toLowerCase())
   );
+
+  const handleCreate = () => {
+    if (newIntegration.name.trim().length < 2) {
+      toast.error('Integration name must be at least 2 characters');
+      return;
+    }
+    createMutation.mutate();
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
-          <p className="text-muted-foreground">Manage your connections with external platforms and services.</p>
+          <p className="text-muted-foreground">Manage your real external channel and platform integrations.</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsCreateOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Add Integration
         </Button>
@@ -103,101 +153,164 @@ export function IntegrationsPage() {
 
       <div className="flex items-center gap-4">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Search integrations..."
-            className="pl-9"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(event) => setSearch(event.target.value)}
+            className="h-9"
           />
         </div>
-        <Button variant="outline" size="icon">
-          <RefreshCw className="h-4 w-4" />
+        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredIntegrations?.map((integration) => (
-          <Card key={integration.id} className="overflow-hidden border-t-4" style={{ borderTopColor: integration.status === 'active' ? 'hsl(var(--primary))' : integration.status === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--muted))' }}>
-            <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center p-2">
-                  <img 
-                    src={integrationIcons[integration.type] || 'https://cdn-icons-png.flaticon.com/512/2103/2103633.png'} 
-                    alt={integration.type}
-                    className="w-full h-full object-contain grayscale opacity-80"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-                <div>
-                  <CardTitle className="text-base">{integration.name}</CardTitle>
-                  <CardDescription className="text-xs uppercase tracking-wider font-semibold">{integration.type.replace('_', ' ')}</CardDescription>
-                </div>
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">Loading integrations...</CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="p-8 space-y-3">
+            <p className="text-sm text-destructive">Failed to load integrations.</p>
+            <p className="text-xs text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please check API access and try again.'}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredIntegrations.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 space-y-3">
+            <p className="text-sm font-medium">No integrations found.</p>
+            <p className="text-xs text-muted-foreground">Add your first integration to start sending through live channels.</p>
+            <Button size="sm" onClick={() => setIsCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Add first integration
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredIntegrations.map((integration) => {
+            const tone = toStatusTone(integration.status);
+            const Icon = tone.icon;
+
+            return (
+              <Card key={integration.id} className="overflow-hidden border-t-4 border-t-primary/40">
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-2">
+                  <div>
+                    <CardTitle className="text-base">{integration.name}</CardTitle>
+                    <CardDescription className="text-xs uppercase tracking-wider font-semibold">
+                      {integration.type.replace('_', ' ')}
+                    </CardDescription>
+                  </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>
+                        <Settings2 className="mr-2 h-4 w-4" />
+                        Configure
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive"
+                        onClick={() => disableMutation.mutate(integration.id)}
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Disable
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </CardHeader>
+                <CardContent className="pt-4">
+                  <div className="flex items-center justify-between text-sm mb-4">
+                    <span className="text-muted-foreground">Status</span>
+                    <div className="flex items-center gap-1.5">
+                      <Icon className={cn('h-4 w-4', tone.iconClassName)} />
+                      <span className={cn('font-medium capitalize', tone.textClassName)}>{integration.status}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Last Updated</span>
+                    <span>{integration.lastSync ? new Date(integration.lastSync).toLocaleString() : 'Never'}</span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add integration</DialogTitle>
+            <DialogDescription>Create a real integration record for your organization.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="integration-name">Name</Label>
+              <Input
+                id="integration-name"
+                placeholder="Slack Notifications"
+                value={newIntegration.name}
+                onChange={(event) =>
+                  setNewIntegration((previous) => ({ ...previous, name: event.target.value }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="integration-type">Type</Label>
+              <Select
+                value={newIntegration.type}
+                onValueChange={(value) =>
+                  setNewIntegration((previous) => ({ ...previous, type: value as IntegrationType }))
+                }
+              >
+                <SelectTrigger id="integration-type">
+                  <SelectValue placeholder="Select integration type" />
+                </SelectTrigger>
+                <SelectContent>
+                  {integrationOptions.map((option) => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div>
+                <p className="text-sm font-medium">Enable immediately</p>
+                <p className="text-xs text-muted-foreground">Set integration status to active on creation.</p>
               </div>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MoreVertical className="h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem>
-                    <Settings2 className="mr-2 h-4 w-4" />
-                    Configure
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <RefreshCw className="mr-2 h-4 w-4" />
-                    Sync Now
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem 
-                    className="text-destructive focus:text-destructive"
-                    onClick={() => deleteMutation.mutate(integration.id)}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="flex items-center justify-between text-sm mb-4">
-                <span className="text-muted-foreground">Status</span>
-                <div className="flex items-center gap-1.5">
-                  {integration.status === 'active' ? (
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                  ) : integration.status === 'error' ? (
-                    <XCircle className="h-4 w-4 text-destructive" />
-                  ) : (
-                    <AlertCircle className="h-4 w-4 text-muted-foreground" />
-                  )}
-                  <span className={cn(
-                    "font-medium capitalize",
-                    integration.status === 'active' ? "text-green-500" : integration.status === 'error' ? "text-destructive" : "text-muted-foreground"
-                  )}>
-                    {integration.status}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
-                <span>Last Sync</span>
-                <span>{integration.lastSync ? new Date(integration.lastSync).toLocaleString() : 'Never'}</span>
-              </div>
-            </CardContent>
-            <CardFooter className="bg-muted/30 border-t p-3 flex justify-between">
-              <Button variant="ghost" size="sm" className="text-xs h-8">
-                View Logs
+              <Button
+                variant={newIntegration.isActive ? 'default' : 'outline'}
+                size="sm"
+                onClick={() =>
+                  setNewIntegration((previous) => ({ ...previous, isActive: !previous.isActive }))
+                }
+              >
+                {newIntegration.isActive ? 'Active' : 'Inactive'}
               </Button>
-              <Button variant="outline" size="sm" className="text-xs h-8">
-                Documentation
-                <ExternalLink className="ml-2 h-3 w-3" />
-              </Button>
-            </CardFooter>
-          </Card>
-        ))}
-      </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsCreateOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleCreate} disabled={createMutation.isPending}>
+              {createMutation.isPending ? 'Creating...' : 'Create integration'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
-
-import { cn } from '@/lib/utils';

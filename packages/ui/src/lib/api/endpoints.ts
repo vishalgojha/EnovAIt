@@ -39,6 +39,49 @@ interface DataRecordListEnvelope {
   };
 }
 
+interface WorkflowListEnvelope {
+  data: WorkflowInstance[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+}
+
+interface ReportListEnvelope {
+  data: Report[];
+  pagination: {
+    limit: number;
+    offset: number;
+    total: number;
+  };
+}
+
+interface RawIntegration {
+  id: string;
+  integration_type: Integration["type"];
+  name: string;
+  config: Record<string, unknown>;
+  is_active: boolean;
+  updated_at?: string;
+}
+
+interface ChannelStatusResponse {
+  channel: string;
+  configured: boolean;
+  healthy: boolean;
+  detail: string;
+}
+
+interface ChannelSendResponse {
+  channel: string;
+  accepted: boolean;
+  external_id: string | null;
+  detail: string;
+  sent_by: string;
+  sent_at: string;
+}
+
 export interface DashboardOverview {
   backendHealthy: boolean;
   modulesCount: number;
@@ -88,6 +131,36 @@ const mapUiModuleToRawPayload = (
     payload.is_active = data.status === 'active';
   } else if (data.is_active !== undefined) {
     payload.is_active = data.is_active;
+  }
+
+  return payload;
+};
+
+const mapRawIntegrationToUiIntegration = (integration: RawIntegration): Integration => ({
+  id: integration.id,
+  type: integration.integration_type,
+  name: integration.name,
+  status: integration.is_active ? "active" : "inactive",
+  config: integration.config ?? {},
+  lastSync: integration.updated_at
+});
+
+const mapUiIntegrationToRawPayload = (
+  integration: Partial<Integration>
+): Partial<RawIntegration> => {
+  const payload: Partial<RawIntegration> = {};
+
+  if (integration.type !== undefined) {
+    payload.integration_type = integration.type;
+  }
+  if (integration.name !== undefined) {
+    payload.name = integration.name;
+  }
+  if (integration.config !== undefined) {
+    payload.config = integration.config;
+  }
+  if (integration.status !== undefined) {
+    payload.is_active = integration.status === "active";
   }
 
   return payload;
@@ -172,13 +245,28 @@ export const adminApi = {
     (await api.put<ApiEnvelope<WorkflowRule>>(`/admin/workflow-rules/${id}`, { is_active: false })).data,
 
   // Integrations
-  // Backend routes for integrations are not wired yet; keep UI stable with local fallback.
-  getIntegrations: async (): Promise<Integration[]> => [],
-  createIntegration: async (data: Partial<Integration>): Promise<Integration> =>
-    ({ id: crypto.randomUUID(), type: 'api_partner', name: data.name ?? 'New Integration', status: 'inactive', config: {} } as Integration),
-  updateIntegration: async (id: string, data: Partial<Integration>): Promise<Integration> =>
-    ({ id, type: data.type ?? 'api_partner', name: data.name ?? 'Updated Integration', status: data.status ?? 'inactive', config: data.config ?? {} } as Integration),
-  deleteIntegration: async (_id: string): Promise<{ ok: true }> => ({ ok: true }),
+  getIntegrations: async (): Promise<Integration[]> => {
+    const integrations = await api.get<ApiEnvelope<RawIntegration[]>>('/admin/integrations');
+    return integrations.data.map(mapRawIntegrationToUiIntegration);
+  },
+  createIntegration: async (data: Partial<Integration>): Promise<Integration> => {
+    const created = await api.post<ApiEnvelope<RawIntegration>>('/admin/integrations', mapUiIntegrationToRawPayload(data));
+    return mapRawIntegrationToUiIntegration(created.data);
+  },
+  updateIntegration: async (id: string, data: Partial<Integration>): Promise<Integration> => {
+    const updated = await api.put<ApiEnvelope<RawIntegration>>(`/admin/integrations/${id}`, mapUiIntegrationToRawPayload(data));
+    return mapRawIntegrationToUiIntegration(updated.data);
+  },
+  deleteIntegration: async (id: string): Promise<Integration> => {
+    const updated = await api.put<ApiEnvelope<RawIntegration>>(`/admin/integrations/${id}`, { is_active: false });
+    return mapRawIntegrationToUiIntegration(updated.data);
+  },
+
+  // Organization Settings
+  getSettings: async () =>
+    (await api.get<ApiEnvelope<{ id: string; name: string; slug: string; settings: Record<string, unknown> }>>('/admin/settings')).data,
+  updateSettings: async (settings: Record<string, unknown>) =>
+    (await api.put<ApiEnvelope<{ id: string; name: string; slug: string; settings: Record<string, unknown> }>>('/admin/settings', { settings })).data,
 };
 
 export const authApi = {
@@ -198,25 +286,37 @@ export const dataApi = {
 };
 
 export const workflowApi = {
-  // Backend exposes `GET /workflows/instances/:id` but not list yet.
-  getInstances: async (_params?: any): Promise<WorkflowInstance[]> => [],
+  getInstances: async (params?: { limit?: number; offset?: number; state?: WorkflowInstance["state"] }) =>
+    (await api.get<WorkflowListEnvelope>('/workflows/instances', params)).data,
   getInstance: async (id: string) => (await api.get<ApiEnvelope<WorkflowInstance>>(`/workflows/instances/${id}`)).data,
   transition: (id: string, action: string, context?: any) => 
     api.post(`/workflows/instances/${id}/transition`, { state: action, comment: context?.comment }),
 };
 
 export const reportApi = {
-  // Backend exposes generate + get-by-id; list endpoint can be added later.
-  getReports: async (): Promise<Report[]> => [],
+  getReports: async (params?: { limit?: number; offset?: number; report_type?: Report["report_type"] }) =>
+    (await api.get<ReportListEnvelope>('/reports', params)).data,
   generateReport: async (data: any) => (await api.post<ApiEnvelope<Report>>('/reports/generate', data)).data,
   getReport: async (id: string) => (await api.get<ApiEnvelope<Report>>(`/reports/${id}`)).data,
 };
 
 export const channelApi = {
-  // Channel control backend endpoints are pending; keep console operational with local stub.
-  sendMessage: async (_data: { channel: string; to: string; content: any }) =>
-    ({ ok: true, queued_at: new Date().toISOString() }),
-  getStatus: async (_channel: string) => ({ status: 'operational', health: 99 }),
+  sendMessage: async (data: {
+    channel: string;
+    to?: string;
+    subject?: string;
+    message: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<ChannelSendResponse> =>
+    (await api.post<ApiEnvelope<ChannelSendResponse>>('/channels/send', {
+      channel: data.channel,
+      to: data.to,
+      subject: data.subject,
+      message: data.message,
+      metadata: data.metadata ?? {}
+    })).data,
+  getStatus: async (channel: string): Promise<ChannelStatusResponse> =>
+    (await api.get<ApiEnvelope<ChannelStatusResponse>>(`/channels/status/${channel}`)).data,
 };
 
 export const dashboardApi = {

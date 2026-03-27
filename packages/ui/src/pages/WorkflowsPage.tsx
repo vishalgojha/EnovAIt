@@ -2,12 +2,11 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Search, 
-  Filter, 
+  RefreshCw,
   Play, 
   Clock, 
   CheckCircle2, 
   XCircle, 
-  AlertCircle,
   MoreHorizontal,
   ChevronRight,
   History,
@@ -45,22 +44,49 @@ import { Trash2 } from 'lucide-react';
 export function WorkflowsPage() {
   const [search, setSearch] = React.useState('');
 
-  const { data: instances, isLoading } = useQuery({
+  const {
+    data: instances = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching
+  } = useQuery({
     queryKey: ['workflow-instances'],
     queryFn: () => workflowApi.getInstances(),
-    initialData: [
-      { id: 'INST-001', rule_id: 'r1', state: 'completed', current_step: 'approved', payload: {}, history: [], created_at: '2024-03-26T10:00:00Z', last_transition_at: '2024-03-26T10:02:00Z' },
-      { id: 'INST-002', rule_id: 'r2', state: 'pending', current_step: 'manager_approval', payload: {}, history: [], created_at: '2024-03-26T10:05:00Z', last_transition_at: '2024-03-26T10:06:00Z' },
-      { id: 'INST-003', rule_id: 'r3', state: 'escalated', current_step: 'ops_review', payload: {}, history: [], created_at: '2024-03-26T10:10:00Z', last_transition_at: '2024-03-26T10:11:00Z' },
-      { id: 'INST-004', rule_id: 'r4', state: 'rejected', current_step: 'closed', payload: {}, history: [], created_at: '2024-03-26T10:15:00Z', last_transition_at: '2024-03-26T10:16:00Z' },
-      { id: 'INST-005', rule_id: 'r2', state: 'approved', current_step: 'complete', payload: {}, history: [], created_at: '2024-03-26T10:20:00Z', last_transition_at: '2024-03-26T10:21:00Z' },
-    ] as WorkflowInstance[],
   });
 
-  const filteredInstances = instances?.filter(i => 
+  const filteredInstances = instances.filter(i => 
     i.id.toLowerCase().includes(search.toLowerCase()) || 
     (i.rule_id ?? '').toLowerCase().includes(search.toLowerCase())
   );
+
+  const stats = [
+    {
+      label: 'Running',
+      value: instances.filter((instance) => instance.state === 'pending' || instance.state === 'escalated').length.toString(),
+      icon: Play,
+      color: 'text-blue-500',
+    },
+    {
+      label: 'Completed',
+      value: instances.filter((instance) => instance.state === 'completed' || instance.state === 'approved').length.toString(),
+      icon: CheckCircle2,
+      color: 'text-green-500',
+    },
+    {
+      label: 'Failed',
+      value: instances.filter((instance) => instance.state === 'rejected').length.toString(),
+      icon: XCircle,
+      color: 'text-red-500',
+    },
+    {
+      label: 'Pending',
+      value: instances.filter((instance) => instance.state === 'pending').length.toString(),
+      icon: Clock,
+      color: 'text-amber-500',
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -78,12 +104,7 @@ export function WorkflowsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        {[
-          { label: 'Running', value: '12', icon: Play, color: 'text-blue-500' },
-          { label: 'Completed', value: '1,242', icon: CheckCircle2, color: 'text-green-500' },
-          { label: 'Failed', value: '24', icon: XCircle, color: 'text-red-500' },
-          { label: 'Pending', value: '5', icon: Clock, color: 'text-amber-500' },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <Card key={stat.label}>
             <CardContent className="p-4 flex items-center gap-4">
               <div className={cn("p-2 rounded-full bg-muted", stat.color)}>
@@ -111,80 +132,92 @@ export function WorkflowsPage() {
                   onChange={(e) => setSearch(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="sm" className="h-9">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
+              <Button variant="outline" size="sm" className="h-9" onClick={() => refetch()} disabled={isFetching}>
+                <RefreshCw className={cn('mr-2 h-4 w-4', isFetching && 'animate-spin')} />
+                Refresh
               </Button>
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[150px]">Instance ID</TableHead>
-                <TableHead>Rule</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Started At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInstances?.map((instance) => (
-                <TableRow key={instance.id}>
-                  <TableCell className="font-mono text-xs font-medium">{instance.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-[10px] font-mono">
-                        {instance.rule_id ?? 'n/a'}
-                      </Badge>
-                      <span className="text-xs">User Signup Flow</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      instance.state === 'completed' || instance.state === 'approved' ? 'outline' : 
-                      instance.state === 'rejected' ? 'destructive' : 'secondary'
-                    } className="capitalize text-[10px]">
-                      {instance.state}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {new Date(instance.created_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <Button variant="ghost" size="sm" className="h-8 text-xs">
-                        Details
-                        <ChevronRight className="ml-1 h-3 w-3" />
-                      </Button>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Play className="mr-2 h-4 w-4" />
-                            Retry
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <ArrowRight className="mr-2 h-4 w-4" />
-                            Transition
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive focus:text-destructive">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Terminate
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </TableCell>
+          {isLoading ? (
+            <div className="p-8 text-sm text-muted-foreground">Loading workflow instances...</div>
+          ) : isError ? (
+            <div className="p-8 space-y-2">
+              <p className="text-sm text-destructive">Failed to load workflow instances.</p>
+              <p className="text-xs text-muted-foreground">
+                {error instanceof Error ? error.message : 'Please retry.'}
+              </p>
+            </div>
+          ) : filteredInstances.length === 0 ? (
+            <div className="p-8 text-sm text-muted-foreground">No workflow instances found.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[150px]">Instance ID</TableHead>
+                  <TableHead>Rule</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Started At</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredInstances.map((instance) => (
+                  <TableRow key={instance.id}>
+                    <TableCell className="font-mono text-xs font-medium">{instance.id}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {instance.rule_id ?? 'n/a'}
+                        </Badge>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={
+                        instance.state === 'completed' || instance.state === 'approved' ? 'outline' : 
+                        instance.state === 'rejected' ? 'destructive' : 'secondary'
+                      } className="capitalize text-[10px]">
+                        {instance.state}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">
+                      {new Date(instance.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="ghost" size="sm" className="h-8 text-xs">
+                          Details
+                          <ChevronRight className="ml-1 h-3 w-3" />
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem>
+                              <Play className="mr-2 h-4 w-4" />
+                              Retry
+                            </DropdownMenuItem>
+                            <DropdownMenuItem>
+                              <ArrowRight className="mr-2 h-4 w-4" />
+                              Transition
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive focus:text-destructive">
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Terminate
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>

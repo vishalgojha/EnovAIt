@@ -2,9 +2,46 @@ import type { Request, Response } from "express";
 
 import { AppError } from "../../lib/errors.js";
 import { getRequestContext } from "../../lib/requestContext.js";
-import { WorkflowIdParamSchema, WorkflowTransitionSchema } from "../schemas/workflowSchemas.js";
+import {
+  ListWorkflowsQuerySchema,
+  WorkflowIdParamSchema,
+  WorkflowTransitionSchema
+} from "../schemas/workflowSchemas.js";
 
 export const workflowController = {
+  async listInstances(req: Request, res: Response) {
+    const query = ListWorkflowsQuerySchema.parse(req.query);
+    const { auth, supabase } = getRequestContext(req);
+
+    const dbQuery = supabase
+      .from("workflow_instances")
+      .select(
+        "id, rule_id, module_id, state, current_step, payload, history, created_at, last_transition_at",
+        { count: "exact" }
+      )
+      .eq("org_id", auth.orgId)
+      .order("created_at", { ascending: false })
+      .range(query.offset, query.offset + query.limit - 1);
+
+    if (query.state) {
+      dbQuery.eq("state", query.state);
+    }
+
+    const { data, error, count } = await dbQuery;
+    if (error) {
+      throw new AppError("Failed to list workflow instances", 500, "DB_READ_FAILED", error);
+    }
+
+    res.status(200).json({
+      data: data ?? [],
+      pagination: {
+        limit: query.limit,
+        offset: query.offset,
+        total: count ?? 0
+      }
+    });
+  },
+
   async getInstance(req: Request, res: Response) {
     const { id } = WorkflowIdParamSchema.parse(req.params);
     const { auth, supabase } = getRequestContext(req);

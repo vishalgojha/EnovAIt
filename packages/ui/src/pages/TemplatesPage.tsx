@@ -2,6 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   Plus, 
+  RefreshCw,
   Search, 
   FileText, 
   MoreVertical,
@@ -34,16 +35,19 @@ import { cn } from '@/lib/utils';
 export function TemplatesPage() {
   const [search, setSearch] = React.useState('');
 
-  const { data: templates, isLoading } = useQuery({
+  const {
+    data: templates = [],
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching
+  } = useQuery({
     queryKey: ['templates'],
     queryFn: adminApi.getTemplates,
-    initialData: [
-      { id: 't1', module_id: 'm1', name: 'ESG Monthly Intake', schema: { facility_name: 'string' }, question_flow: [{ id: 'facility_name', question: 'Facility?' }], is_default: true, is_active: true },
-      { id: 't2', module_id: 'm2', name: 'Maintenance Intake', schema: { severity: 'string' }, question_flow: [{ id: 'severity', question: 'Severity?' }], is_default: false, is_active: true },
-    ] as Template[],
   });
 
-  const filteredTemplates = templates?.filter(t => 
+  const filteredTemplates = templates.filter(t => 
     t.name.toLowerCase().includes(search.toLowerCase()) || 
     t.module_id.toLowerCase().includes(search.toLowerCase())
   );
@@ -71,10 +75,36 @@ export function TemplatesPage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
+        <Button variant="outline" size="icon" onClick={() => refetch()} disabled={isFetching}>
+          <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
+        </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filteredTemplates?.map((template) => {
+      {isLoading ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">Loading templates...</CardContent>
+        </Card>
+      ) : isError ? (
+        <Card>
+          <CardContent className="p-8 space-y-2">
+            <p className="text-sm text-destructive">Failed to load templates.</p>
+            <p className="text-xs text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please retry.'}
+            </p>
+            <Button size="sm" variant="outline" onClick={() => refetch()}>
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      ) : filteredTemplates.length === 0 ? (
+        <Card>
+          <CardContent className="p-8 text-sm text-muted-foreground">
+            No templates found yet.
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {filteredTemplates.map((template) => {
           const Icon = FileText;
           const schemaPreview = JSON.stringify(template.schema);
           const variableKeys = Object.keys(template.schema ?? {});
@@ -128,12 +158,13 @@ export function TemplatesPage() {
               </CardContent>
               <CardFooter className="pt-0 flex justify-between items-center text-[10px] text-muted-foreground">
                 <span>ID: {template.id}</span>
-                <span>Last updated 2d ago</span>
+                <span>{template.is_active ? 'Active' : 'Inactive'}</span>
               </CardFooter>
             </Card>
           );
-        })}
-      </div>
+          })}
+        </div>
+      )}
     </div>
   );
 }

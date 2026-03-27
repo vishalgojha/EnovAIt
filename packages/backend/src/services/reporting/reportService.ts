@@ -76,8 +76,8 @@ export const reportService = {
       ...data,
       data_snapshot: snapshot,
       export: {
-        pdf: "placeholder",
-        excel: "placeholder"
+        pdf: null,
+        excel: null
       }
     };
   }
