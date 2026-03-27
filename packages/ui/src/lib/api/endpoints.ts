@@ -6,11 +6,19 @@ import {
   Integration, 
   DataRecord, 
   WorkflowInstance, 
-  Report 
+  Report,
+  User,
+  Tenant
 } from '../../types';
 
 interface ApiEnvelope<T> {
   data: T;
+}
+
+interface AuthResult {
+  token: string;
+  user: User;
+  tenant: Tenant;
 }
 
 interface DataRecordListEnvelope {
@@ -118,6 +126,17 @@ export const adminApi = {
   updateIntegration: async (id: string, data: Partial<Integration>): Promise<Integration> =>
     ({ id, type: data.type ?? 'api_partner', name: data.name ?? 'Updated Integration', status: data.status ?? 'inactive', config: data.config ?? {} } as Integration),
   deleteIntegration: async (_id: string): Promise<{ ok: true }> => ({ ok: true }),
+};
+
+export const authApi = {
+  signIn: async (payload: { email: string; password: string }): Promise<AuthResult> =>
+    (await api.post<ApiEnvelope<AuthResult>>('/public/auth/signin', payload)).data,
+  signUp: async (payload: {
+    full_name: string;
+    company_name: string;
+    email: string;
+    password: string;
+  }): Promise<AuthResult> => (await api.post<ApiEnvelope<AuthResult>>('/public/auth/signup', payload)).data,
 };
 
 export const dataApi = {

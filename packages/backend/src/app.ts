@@ -8,6 +8,7 @@ import { sanitizeInput } from "./api/middlewares/sanitizeInput.js";
 import { verifyWebhookSignature } from "./api/middlewares/verifyWebhookSignature.js";
 import { notFoundHandler } from "./api/middlewares/notFound.js";
 import { requireAuth } from "./api/middlewares/requireAuth.js";
+import { authRouter } from "./api/routes/authRoutes.js";
 import { channelWebhookRouter } from "./api/routes/channelWebhookRoutes.js";
 import { healthRouter } from "./api/routes/healthRoutes.js";
 import { v1Router } from "./api/routes/v1Router.js";
@@ -34,6 +35,7 @@ app.use("/api", globalApiLimiter);
 app.use("/api/v1/health", healthRouter);
 app.use("/api/v1/channels/webhooks", webhookLimiter, verifyWebhookSignature, channelWebhookRouter);
 app.use("/api/v1/channels/whatsapp/official/webhook", webhookLimiter, verifyWebhookSignature, whatsappWebhookRouter);
+app.use("/api/v1/public/auth", sanitizeInput, authRouter);
 app.use("/api/v1", requireAuth, tenantAwareLimiter, sanitizeInput, v1Router);
 
 app.use(notFoundHandler);

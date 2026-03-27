@@ -38,6 +38,10 @@ const queryClient = new QueryClient({
 });
 
 export default function App() {
+  React.useEffect(() => {
+    document.title = 'EnovAIt';
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>

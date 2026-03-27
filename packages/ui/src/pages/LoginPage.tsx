@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { authApi } from '@/lib/api/endpoints';
 import { useAuthStore } from '@/lib/store/auth';
 import { toast } from 'sonner';
 
@@ -24,32 +25,27 @@ export function LoginPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@enovait.com',
-      password: 'password123',
+      email: '',
+      password: '',
     }
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Mock login delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful auth
-      setAuth(
-        { id: 'u1', email: data.email, name: 'Admin User', role: 'owner' },
-        { 
-          id: 't1', 
-          name: 'EnovAIt Global', 
-          slug: 'enovait-global', 
-          settings: { theme: 'light' } 
-        },
-        'mock-jwt-token'
-      );
+      const result = await authApi.signIn(data);
+      setAuth(result.user, result.tenant, result.token);
       
       toast.success('Successfully logged in!');
       navigate('/dashboard');
-    } catch (error) {
-      toast.error('Failed to login. Please check your credentials.');
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' &&
+        error &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message === 'string'
+          ? (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
+          : 'Failed to login. Please check your credentials.';
+      toast.error(message);
     }
   };
 

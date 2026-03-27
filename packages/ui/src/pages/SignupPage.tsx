@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { authApi } from '@/lib/api/endpoints';
 import { useAuthStore } from '@/lib/store/auth';
 import { toast } from 'sonner';
 
@@ -46,29 +47,26 @@ export function SignupPage() {
 
   const onSubmit = async (data: SignupFormValues) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const result = await authApi.signUp({
+        full_name: data.fullName,
+        company_name: data.companyName,
+        email: data.email,
+        password: data.password
+      });
 
-      const tenantSlug = data.companyName
-        .toLowerCase()
-        .trim()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '');
-
-      setAuth(
-        { id: 'u1', email: data.email, name: data.fullName, role: 'owner' },
-        {
-          id: 't1',
-          name: data.companyName,
-          slug: tenantSlug || 'enovait-tenant',
-          settings: { theme: 'light' }
-        },
-        'mock-jwt-token'
-      );
+      setAuth(result.user, result.tenant, result.token);
 
       toast.success('Account created successfully!');
       navigate('/dashboard');
-    } catch (_error) {
-      toast.error('Failed to create account. Please try again.');
+    } catch (error: unknown) {
+      const message =
+        typeof error === 'object' &&
+        error &&
+        'response' in error &&
+        typeof (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message === 'string'
+          ? (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
+          : 'Failed to create account. Please try again.';
+      toast.error(message);
     }
   };
 
