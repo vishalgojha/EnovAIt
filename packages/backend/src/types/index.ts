@@ -54,6 +54,7 @@ export type IntegrationType =
   | 'iot_mqtt' 
   | 'erp_crm' 
   | 'api_partner' 
+  | 'archon'
   | 'web_widget' 
   | 'mobile_sdk';
 

@@ -57,6 +57,10 @@ const EnvSchema = z.object({
   ERP_CRM_WEBHOOK_URL: z.string().url().optional(),
   API_PARTNER_WEBHOOK_URL: z.string().url().optional(),
 
+  ARCHON_BASE_URL: z.string().url().optional(),
+  ARCHON_API_TOKEN: z.string().optional(),
+  ARCHON_TIMEOUT_MS: z.coerce.number().int().min(1000).max(120000).default(20000),
+
   CHANNEL_WEBHOOK_TOKEN: z.string().optional(),
 
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace", "silent"]).default("info"),

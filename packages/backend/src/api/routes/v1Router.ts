@@ -1,6 +1,7 @@
 import { Router } from "express";
 
 import { adminRouter } from "./adminRoutes.js";
+import { archonRouter } from "./archonRoutes.js";
 import { channelRouter } from "./channelRoutes.js";
 import { chatRouter } from "./chatRoutes.js";
 import { dataRouter } from "./dataRoutes.js";
@@ -14,4 +15,5 @@ v1Router.use("/channels", channelRouter);
 v1Router.use("/data", dataRouter);
 v1Router.use("/workflows", workflowRouter);
 v1Router.use("/reports", reportRouter);
+v1Router.use("/archon", archonRouter);
 v1Router.use("/admin", adminRouter);

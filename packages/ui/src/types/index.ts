@@ -54,8 +54,28 @@ export type IntegrationType =
   | 'iot_mqtt' 
   | 'erp_crm' 
   | 'api_partner' 
+  | 'archon'
   | 'web_widget' 
   | 'mobile_sdk';
+
+export interface ArchonStatus {
+  configured: boolean;
+  reachable: boolean;
+  baseUrl?: string;
+  version?: string;
+  gitSha?: string | null;
+  detail: string;
+}
+
+export interface ArchonTaskResult {
+  task_id: string;
+  goal: string;
+  mode: 'debate';
+  final_answer: string;
+  confidence: number;
+  budget: Record<string, unknown>;
+  debate?: Record<string, unknown> | null;
+}
 
 export interface Integration {
   id: string;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, CheckCircle2, MoreVertical, Plus, RefreshCw, Settings2, Trash2, XCircle } from 'lucide-react';
+import { AlertCircle, Bot, CheckCircle2, MoreVertical, Play, Plus, RefreshCw, Settings2, Trash2, XCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { adminApi } from '@/lib/api/endpoints';
+import { Textarea } from '@/components/ui/textarea';
+import { adminApi, archonApi } from '@/lib/api/endpoints';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationType } from '@/types';
 import { toast } from 'sonner';
@@ -33,6 +34,7 @@ const integrationOptions: Array<{ value: IntegrationType; label: string }> = [
   { value: 'iot_mqtt', label: 'IoT MQTT' },
   { value: 'erp_crm', label: 'ERP / CRM' },
   { value: 'api_partner', label: 'API Partner' },
+  { value: 'archon', label: 'Archon' },
 ];
 
 const toStatusTone = (status: Integration['status']) => {
@@ -63,6 +65,7 @@ export function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
   const [isCreateOpen, setIsCreateOpen] = React.useState(false);
+  const [archonGoal, setArchonGoal] = React.useState('');
   const [newIntegration, setNewIntegration] = React.useState<{
     name: string;
     type: IntegrationType;
@@ -83,6 +86,16 @@ export function IntegrationsPage() {
   } = useQuery({
     queryKey: ['integrations'],
     queryFn: adminApi.getIntegrations,
+  });
+
+  const {
+    data: archonStatus,
+    isLoading: isArchonLoading,
+    refetch: refetchArchonStatus,
+    isFetching: isArchonFetching,
+  } = useQuery({
+    queryKey: ['archon-status'],
+    queryFn: archonApi.getStatus,
   });
 
   const createMutation = useMutation({
@@ -124,6 +137,24 @@ export function IntegrationsPage() {
     onError: () => toast.error('Failed to disable integration'),
   });
 
+  const archonTaskMutation = useMutation({
+    mutationFn: (goal: string) =>
+      archonApi.runTask({
+        goal,
+        context: {
+          source: 'enovait-ui',
+        },
+      }),
+    onSuccess: () => {
+      toast.success('Archon completed the task');
+    },
+    onError: (mutationError: unknown) => {
+      const message =
+        mutationError instanceof Error ? mutationError.message : 'Failed to run task in Archon';
+      toast.error(message);
+    },
+  });
+
   const filteredIntegrations = integrations.filter(
     (integration) =>
       integration.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -136,6 +167,16 @@ export function IntegrationsPage() {
       return;
     }
     createMutation.mutate();
+  };
+
+  const handleRunArchonTask = () => {
+    const trimmedGoal = archonGoal.trim();
+    if (trimmedGoal.length < 5) {
+      toast.error('Add a more detailed task for Archon.');
+      return;
+    }
+
+    archonTaskMutation.mutate(trimmedGoal);
   };
 
   return (
@@ -164,6 +205,83 @@ export function IntegrationsPage() {
           <RefreshCw className={cn('h-4 w-4', isFetching && 'animate-spin')} />
         </Button>
       </div>
+
+      <Card className="border-primary/30 bg-primary/5">
+        <CardHeader className="space-y-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <Bot className="h-5 w-5 text-primary" />
+                <CardTitle>Archon orchestration</CardTitle>
+                <Badge variant={archonStatus?.reachable ? 'default' : 'secondary'}>
+                  {isArchonLoading ? 'Checking' : archonStatus?.reachable ? 'Connected' : archonStatus?.configured ? 'Configured' : 'Not configured'}
+                </Badge>
+              </div>
+              <CardDescription>
+                Route long-form orchestration tasks from EnovAIt into the embedded Archon runtime.
+              </CardDescription>
+            </div>
+            <Button variant="outline" onClick={() => refetchArchonStatus()} disabled={isArchonFetching}>
+              <RefreshCw className={cn('mr-2 h-4 w-4', isArchonFetching && 'animate-spin')} />
+              Refresh status
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-3">
+            <div className="rounded-lg border bg-background/80 p-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Base URL</p>
+              <p className="mt-2 text-sm font-medium">{archonStatus?.baseUrl ?? 'Not configured'}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Version</p>
+              <p className="mt-2 text-sm font-medium">{archonStatus?.version ?? 'Unknown'}</p>
+            </div>
+            <div className="rounded-lg border bg-background/80 p-3">
+              <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Runtime</p>
+              <p className="mt-2 text-sm font-medium">{archonStatus?.detail ?? 'Waiting for Archon status...'}</p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="archon-goal">Task for Archon</Label>
+            <Textarea
+              id="archon-goal"
+              placeholder="Example: Analyze our ESG intake workflow and propose the highest-leverage automation improvements."
+              value={archonGoal}
+              onChange={(event) => setArchonGoal(event.target.value)}
+              className="min-h-28"
+            />
+          </div>
+
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              EnovAIt sends the goal to Archon&apos;s `/v1/tasks` API using the configured Archon base URL and token.
+            </p>
+            <Button onClick={handleRunArchonTask} disabled={archonTaskMutation.isPending}>
+              <Play className="mr-2 h-4 w-4" />
+              {archonTaskMutation.isPending ? 'Running...' : 'Run in Archon'}
+            </Button>
+          </div>
+
+          {archonTaskMutation.data ? (
+            <div className="rounded-xl border bg-background p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-semibold">Last Archon result</p>
+                  <p className="text-xs text-muted-foreground">
+                    Confidence {archonTaskMutation.data.confidence}% • Task {archonTaskMutation.data.task_id}
+                  </p>
+                </div>
+                <Badge variant="outline">{archonTaskMutation.data.mode}</Badge>
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
+                {archonTaskMutation.data.final_answer}
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {isLoading ? (
         <Card>

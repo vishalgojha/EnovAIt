@@ -7,6 +7,8 @@ import {
   DataRecord, 
   WorkflowInstance, 
   Report,
+  ArchonStatus,
+  ArchonTaskResult,
   User,
   Tenant
 } from '../../types';
@@ -80,6 +82,12 @@ interface ChannelSendResponse {
   detail: string;
   sent_by: string;
   sent_at: string;
+}
+
+interface ArchonTaskRequest {
+  goal: string;
+  language?: string;
+  context?: Record<string, unknown>;
 }
 
 export interface DashboardOverview {
@@ -317,6 +325,13 @@ export const channelApi = {
     })).data,
   getStatus: async (channel: string): Promise<ChannelStatusResponse> =>
     (await api.get<ApiEnvelope<ChannelStatusResponse>>(`/channels/status/${channel}`)).data,
+};
+
+export const archonApi = {
+  getStatus: async (): Promise<ArchonStatus> =>
+    (await api.get<ApiEnvelope<ArchonStatus>>('/archon/health')).data,
+  runTask: async (payload: ArchonTaskRequest): Promise<ArchonTaskResult> =>
+    (await api.post<ApiEnvelope<ArchonTaskResult>>('/archon/tasks', payload)).data,
 };
 
 export const dashboardApi = {
