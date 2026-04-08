@@ -1,5 +1,6 @@
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
+import { buildEnovAItArchonTaskBrief } from "../../prompts/enovaitPrompts.js";
 
 interface ArchonHealthResponse {
   status?: string;
@@ -7,7 +8,7 @@ interface ArchonHealthResponse {
   git_sha?: string | null;
 }
 
-interface ArchonTaskPayload {
+export interface ArchonTaskPayload {
   goal: string;
   language?: string;
   context?: Record<string, unknown>;
@@ -117,14 +118,16 @@ export const archonService = {
       );
     }
 
+    const brief = buildEnovAItArchonTaskBrief(payload);
+
     const response = await fetchWithTimeout(joinUrl(env.ARCHON_BASE_URL, "/v1/tasks"), {
       method: "POST",
       headers: buildHeaders(true),
       body: JSON.stringify({
-        goal: payload.goal,
+        goal: brief.goal,
         mode: "debate",
-        language: payload.language,
-        context: payload.context ?? {},
+        language: brief.language,
+        context: brief.context ?? {},
       }),
     });
 

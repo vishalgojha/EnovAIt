@@ -11,6 +11,133 @@ import {
 } from "../schemas/adminSchemas.js";
 
 export const adminController = {
+  async getPlatformSummary(req: Request, res: Response) {
+    const { auth, supabase } = getRequestContext(req);
+
+    const [integrationsResult, pendingWorkflowsResult, notificationsResult] = await Promise.all([
+      supabase.from("integrations").select("id", { count: "exact", head: true }).eq("org_id", auth.orgId).eq("is_active", true),
+      supabase
+        .from("workflow_instances")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", auth.orgId)
+        .in("state", ["pending", "escalated"]),
+      supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .eq("org_id", auth.orgId)
+        .eq("status", "failed")
+    ]);
+
+    for (const result of [integrationsResult, pendingWorkflowsResult, notificationsResult]) {
+      if (result.error) {
+        throw new AppError("Failed to load platform summary", 500, "DB_READ_FAILED", result.error);
+      }
+    }
+
+    res.status(200).json({
+      data: {
+        activeIntegrations: integrationsResult.count ?? 0,
+        pendingApprovals: pendingWorkflowsResult.count ?? 0,
+        failedNotifications: notificationsResult.count ?? 0
+      }
+    });
+  },
+
+  async listPlatformLogs(req: Request, res: Response) {
+    const { auth, supabase } = getRequestContext(req);
+    const limit = Math.min(Number(req.query.limit ?? 20), 100);
+
+    const [workflowEventsResult, notificationsResult] = await Promise.all([
+      supabase
+        .from("workflow_events")
+        .select("id, event_type, payload, processed_at, created_at")
+        .eq("org_id", auth.orgId)
+        .order("created_at", { ascending: false })
+        .limit(limit),
+      supabase
+        .from("notifications")
+        .select("id, channel, status, title, body, sent_at, created_at")
+        .eq("org_id", auth.orgId)
+        .order("created_at", { ascending: false })
+        .limit(limit)
+    ]);
+
+    for (const result of [workflowEventsResult, notificationsResult]) {
+      if (result.error) {
+        throw new AppError("Failed to load platform logs", 500, "DB_READ_FAILED", result.error);
+      }
+    }
+
+    const logs = [
+      ...(workflowEventsResult.data ?? []).map((entry) => ({
+        id: entry.id,
+        source: "Workflow event",
+        kind: "workflow_event",
+        title: entry.event_type,
+        detail: JSON.stringify(entry.payload).slice(0, 180),
+        status: entry.processed_at ? "processed" : "pending",
+        at: entry.created_at
+      })),
+      ...(notificationsResult.data ?? []).map((entry) => ({
+        id: entry.id,
+        source: "Notification",
+        kind: "notification",
+        title: `${entry.channel} · ${entry.status}`,
+        detail: `${entry.title}${entry.body ? ` - ${entry.body}` : ""}`,
+        status: entry.sent_at ? "sent" : entry.status,
+        at: entry.created_at
+      }))
+    ]
+      .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+      .slice(0, limit);
+
+    res.status(200).json({ data: logs });
+  },
+
+  async listPlatformApprovals(req: Request, res: Response) {
+    const { auth, supabase } = getRequestContext(req);
+    const limit = Math.min(Number(req.query.limit ?? 20), 100);
+
+    const { data, error } = await supabase
+      .from("workflow_instances")
+      .select("id, state, current_step, payload, history, created_at, last_transition_at, assigned_to, data_record_id, rule_id")
+      .eq("org_id", auth.orgId)
+      .in("state", ["pending", "escalated", "rejected"])
+      .order("last_transition_at", { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      throw new AppError("Failed to load approvals", 500, "DB_READ_FAILED", error);
+    }
+
+    const approvals = (data ?? []).map((item) => {
+      const payload = (item.payload ?? {}) as Record<string, unknown>;
+      const title =
+        typeof payload.title === "string"
+          ? payload.title
+          : typeof payload.record_type === "string"
+            ? payload.record_type
+            : item.current_step || "Review item";
+
+      const history = Array.isArray(item.history) ? item.history : [];
+      const latest = history.length > 0 ? history[history.length - 1] : null;
+
+      return {
+        id: item.id,
+        state: item.state,
+        title,
+        summary: latest && typeof latest === "object" && latest !== null && "comment" in latest
+          ? String((latest as { comment?: unknown }).comment ?? "")
+          : `Rule ${item.rule_id ?? "n/a"} requires review`,
+        assignedTo: item.assigned_to,
+        dataRecordId: item.data_record_id,
+        updatedAt: item.last_transition_at
+      };
+    });
+
+    res.status(200).json({ data: approvals });
+  },
+
   async listModules(req: Request, res: Response) {
     const { auth, supabase } = getRequestContext(req);
 

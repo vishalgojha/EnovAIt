@@ -112,25 +112,6 @@ export function Sidebar() {
                   <p className="truncate text-xs text-muted-foreground">Subscriptions, logs</p>
                 </div>
               </NavLink>
-              <NavLink
-                to="/dashboard/ai-ops"
-                className={({ isActive }) =>
-                  cn(
-                    'group flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-all',
-                    isActive
-                      ? 'bg-white text-foreground shadow-sm ring-1 ring-border'
-                      : 'text-muted-foreground hover:bg-white/75 hover:text-foreground'
-                  )
-                }
-              >
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/50 text-primary transition-colors group-hover:bg-accent">
-                  <Sparkles className="h-4 w-4" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">AI Ops</p>
-                  <p className="truncate text-xs text-muted-foreground">Self-healing agent</p>
-                </div>
-              </NavLink>
             </nav>
           </>
         ) : null}

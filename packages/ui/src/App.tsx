@@ -20,7 +20,6 @@ import { ReportsPage } from '@/pages/ReportsPage';
 import { ChannelsConsolePage } from '@/pages/ChannelsConsolePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { PlatformConsolePage } from '@/pages/PlatformConsolePage';
-import { AIOpsPage } from '@/pages/AIOpsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -59,7 +58,6 @@ export default function App() {
                 <Route path="channels" element={<ChannelsConsolePage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="platform" element={<PlatformConsolePage />} />
-                <Route path="ai-ops" element={<AIOpsPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

@@ -8,6 +8,10 @@ export const adminRouter = Router();
 
 adminRouter.use(requireAdmin);
 
+adminRouter.get("/platform/summary", asyncHandler(adminController.getPlatformSummary));
+adminRouter.get("/platform/logs", asyncHandler(adminController.listPlatformLogs));
+adminRouter.get("/platform/approvals", asyncHandler(adminController.listPlatformApprovals));
+
 adminRouter.get("/modules", asyncHandler(adminController.listModules));
 adminRouter.post("/modules", asyncHandler(adminController.createModule));
 adminRouter.put("/modules/:id", asyncHandler(adminController.updateModule));

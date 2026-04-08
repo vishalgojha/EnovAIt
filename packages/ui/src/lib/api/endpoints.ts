@@ -17,6 +17,32 @@ interface ApiEnvelope<T> {
   data: T;
 }
 
+interface PlatformSummary {
+  activeIntegrations: number;
+  pendingApprovals: number;
+  failedNotifications: number;
+}
+
+interface PlatformLogItem {
+  id: string;
+  source: string;
+  kind: 'workflow_event' | 'notification';
+  title: string;
+  detail: string;
+  status: string;
+  at: string;
+}
+
+interface PlatformApprovalItem {
+  id: string;
+  state: 'pending' | 'approved' | 'rejected' | 'escalated' | 'completed';
+  title: string;
+  summary: string;
+  assignedTo: string | null;
+  dataRecordId: string | null;
+  updatedAt: string;
+}
+
 interface RawModule {
   id: string;
   code: string;
@@ -231,6 +257,13 @@ const buildRecordsChart = (records: DataRecord[]): Array<{ name: string; records
 };
 
 export const adminApi = {
+  getPlatformSummary: async (): Promise<PlatformSummary> =>
+    (await api.get<ApiEnvelope<PlatformSummary>>('/admin/platform/summary')).data,
+  getPlatformLogs: async (params?: { limit?: number }): Promise<PlatformLogItem[]> =>
+    (await api.get<ApiEnvelope<PlatformLogItem[]>>('/admin/platform/logs', params)).data,
+  getPlatformApprovals: async (params?: { limit?: number }): Promise<PlatformApprovalItem[]> =>
+    (await api.get<ApiEnvelope<PlatformApprovalItem[]>>('/admin/platform/approvals', params)).data,
+
   // Modules
   getModules: async (): Promise<Module[]> => {
     const modules = await api.get<ApiEnvelope<RawModule[]>>('/admin/modules');
