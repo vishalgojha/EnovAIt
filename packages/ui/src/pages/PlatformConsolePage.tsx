@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Activity, CreditCard, ShieldCheck, RefreshCw } from 'lucide-react';
+import { AlertTriangle, Activity, CreditCard, ShieldCheck, RefreshCw, ShieldAlert } from 'lucide-react';
 
 import { BlockGuide } from '@/components/layout/BlockGuide';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +8,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { adminApi } from '@/lib/api/endpoints';
 import { useAuthStore } from '@/lib/store/auth';
+import { useNavigate } from 'react-router-dom';
 
 const toneFor = (kind: string) => (kind === 'workflow_event' ? 'secondary' as const : 'default' as const);
 
 export function PlatformConsolePage() {
+  const navigate = useNavigate();
   const { user } = useAuthStore();
   const isSuperAdmin = user?.role === 'super_admin';
 
@@ -104,6 +106,17 @@ export function PlatformConsolePage() {
             </div>
           </CardContent>
         </Card>
+        <Card className="rounded-[1.6rem] border-white/70 bg-white/90 shadow-none">
+          <CardContent className="p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Secrets</p>
+                <p className="mt-2 text-2xl font-semibold">Controlled</p>
+              </div>
+              <ShieldAlert className="h-5 w-5 text-primary" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1.1fr)_360px]">
@@ -164,6 +177,22 @@ export function PlatformConsolePage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="rounded-[1.8rem] border-white/70 bg-white/90 shadow-none">
+        <CardHeader>
+          <CardTitle>Secrets environment</CardTitle>
+          <CardDescription>Open the controlled env template for Supabase and the active AI provider.</CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <p className="text-sm font-medium">Backend `.env` and provider keys live behind super admin access.</p>
+            <p className="text-sm text-muted-foreground">Use this to copy the safe template and keep runtime secrets out of the browser.</p>
+          </div>
+          <Button variant="outline" onClick={() => navigate('/dashboard/secrets')}>
+            Open secrets environment
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card className="rounded-[1.8rem] border-white/70 bg-white/90 shadow-none">
         <CardHeader>
