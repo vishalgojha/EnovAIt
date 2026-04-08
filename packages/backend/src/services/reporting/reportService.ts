@@ -29,6 +29,57 @@ const fetchSnapshot = async (
     return data ?? [];
   }
 
+  if (request.report_type === "brsr_annual_report") {
+    const { data, error } = await supabase
+      .from("data_records")
+      .select("id, record_type, title, source_channel, created_at, effective_at, data, module:modules(code, name)")
+      .eq("org_id", orgId)
+      .order("effective_at", { ascending: false })
+      .limit(500);
+
+    if (error) {
+      throw new AppError("Failed to fetch BRSR annual report snapshot", 500, "REPORT_QUERY_FAILED", error);
+    }
+
+    const rows = (data ?? []) as Array<{
+      id: string;
+      record_type: string;
+      title: string;
+      source_channel: string;
+      created_at: string;
+      effective_at: string;
+      data: Record<string, unknown>;
+      module: { code?: string; name?: string } | Array<{ code?: string; name?: string }> | null;
+    }>;
+
+    const brsrRows = rows.filter((row) => {
+      const module = Array.isArray(row.module) ? row.module[0] : row.module;
+      return module?.code === "brsr" || module?.code === "esg";
+    });
+
+    const byRecordType = brsrRows.reduce<Record<string, number>>((accumulator, row) => {
+      accumulator[row.record_type] = (accumulator[row.record_type] ?? 0) + 1;
+      return accumulator;
+    }, {});
+
+    const readinessSignals = {
+      total_records: brsrRows.length,
+      material_issues_records: byRecordType["brsr_material_issue"] ?? 0,
+      principle_records: Object.entries(byRecordType)
+        .filter(([key]) => key.startsWith("brsr_principle_"))
+        .reduce((sum, [, count]) => sum + count, 0),
+      section_a_records: byRecordType["brsr_section_a_general_disclosure"] ?? 0,
+      section_b_records: byRecordType["brsr_section_b_management_disclosure"] ?? 0,
+      multi_channel_sources: [...new Set(brsrRows.map((row) => row.source_channel))],
+    };
+
+    return {
+      generated_for: "BRSR annual report",
+      readiness_signals: readinessSignals,
+      records: brsrRows,
+    };
+  }
+
   const { data, error } = await supabase
     .from("workflow_instances")
     .select("id, state, current_step, created_at, module_id")

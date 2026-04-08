@@ -1,6 +1,6 @@
 import React from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Bot, CheckCircle2, MoreVertical, Play, Plus, RefreshCw, Settings2, Trash2, XCircle } from 'lucide-react';
+import { AlertCircle, Bot, CheckCircle2, Copy, MoreVertical, Play, Plus, RefreshCw, Settings2, Trash2, XCircle } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,11 +19,13 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { adminApi, archonApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { cn } from '@/lib/utils';
 import { Integration, IntegrationType } from '@/types';
 import { toast } from 'sonner';
 
 const integrationOptions: Array<{ value: IntegrationType; label: string }> = [
+  { value: 'whatsapp_evolution', label: 'WhatsApp Evolution' },
   { value: 'whatsapp_official', label: 'WhatsApp Official' },
   { value: 'whatsapp_baileys', label: 'WhatsApp Baileys' },
   { value: 'email', label: 'Email' },
@@ -61,6 +63,21 @@ const toStatusTone = (status: Integration['status']) => {
   };
 };
 
+const getApiOrigin = (): string => {
+  const configured = import.meta.env.VITE_API_BASE_URL;
+  const fallback = typeof window !== 'undefined' ? window.location.origin : '';
+
+  if (!configured) {
+    return fallback;
+  }
+
+  try {
+    return new URL(configured, fallback || configured).origin;
+  } catch {
+    return fallback;
+  }
+};
+
 export function IntegrationsPage() {
   const queryClient = useQueryClient();
   const [search, setSearch] = React.useState('');
@@ -72,7 +89,7 @@ export function IntegrationsPage() {
     isActive: boolean;
   }>({
     name: '',
-    type: 'api_partner',
+    type: 'whatsapp_evolution',
     isActive: true,
   });
 
@@ -112,7 +129,7 @@ export function IntegrationsPage() {
       setIsCreateOpen(false);
       setNewIntegration({
         name: '',
-        type: 'api_partner',
+        type: 'whatsapp_evolution',
         isActive: true,
       });
     },
@@ -179,8 +196,25 @@ export function IntegrationsPage() {
     archonTaskMutation.mutate(trimmedGoal);
   };
 
+  const copyWebhookUrl = async (integrationId: string) => {
+    const webhookUrl = `${getApiOrigin()}/api/v1/channels/whatsapp/official/webhook/${integrationId}`;
+    await navigator.clipboard.writeText(webhookUrl);
+    toast.success('Webhook URL copied');
+  };
+
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Connections"
+        title="Connect the channels that already carry operational evidence"
+        description="Integrations should feel like enterprise plumbing, not developer configuration. The page shows real webhook URLs, channel health, and orchestration status so teams can trust the intake layer."
+        points={[
+          { title: 'Real channels', detail: 'Use WhatsApp, email, ERP, or APIs to bring evidence into the workspace.' },
+          { title: 'Orchestration', detail: 'Archon remains the deep work layer for multi-step tasks and longer reasoning chains.' },
+          { title: 'Health checks', detail: 'Keep an eye on reachability so integrations fail loudly instead of silently.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Integrations</h1>
@@ -315,6 +349,12 @@ export function IntegrationsPage() {
           {filteredIntegrations.map((integration) => {
             const tone = toStatusTone(integration.status);
             const Icon = tone.icon;
+            const webhookUrl =
+              integration.type === 'whatsapp_official'
+                ? `${getApiOrigin()}/api/v1/channels/whatsapp/official/webhook/${integration.id}`
+                : integration.type === 'whatsapp_evolution'
+                  ? `${getApiOrigin()}/api/v1/channels/whatsapp/evolution/webhook/${integration.id}`
+                : null;
 
             return (
               <Card key={integration.id} className="overflow-hidden border-t-4 border-t-primary/40">
@@ -358,6 +398,23 @@ export function IntegrationsPage() {
                     <span>Last Updated</span>
                     <span>{integration.lastSync ? new Date(integration.lastSync).toLocaleString() : 'Never'}</span>
                   </div>
+
+                  {webhookUrl ? (
+                    <div className="mt-4 rounded-xl border bg-background/70 p-3">
+                      <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Webhook URL</p>
+                      <p className="mt-2 break-all text-xs font-medium text-foreground">{webhookUrl}</p>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-3 w-full"
+                        onClick={() => copyWebhookUrl(integration.id)}
+                      >
+                        <Copy className="mr-2 h-4 w-4" />
+                        Copy URL
+                      </Button>
+                    </div>
+                  ) : null}
                 </CardContent>
               </Card>
             );
@@ -376,7 +433,7 @@ export function IntegrationsPage() {
               <Label htmlFor="integration-name">Name</Label>
               <Input
                 id="integration-name"
-                placeholder="Slack Notifications"
+                placeholder="WhatsApp ESG Ingestion"
                 value={newIntegration.name}
                 onChange={(event) =>
                   setNewIntegration((previous) => ({ ...previous, name: event.target.value }))

@@ -26,6 +26,10 @@ export const createAIProvider = (): AIExtractionProvider => {
     return new OpenAIExtractionProvider();
   }
 
+  if (env.AI_PROVIDER === "openai_compatible") {
+    return new OpenAIExtractionProvider();
+  }
+
   if (env.AI_PROVIDER === "anthropic") {
     return new AnthropicExtractionProvider();
   }

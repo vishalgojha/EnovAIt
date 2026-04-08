@@ -32,6 +32,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { adminApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { WorkflowRule } from '@/types';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -69,6 +70,17 @@ export function WorkflowRulesPage() {
 
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Automations"
+        title="Workflow rules turn recurring ESG follow-ups into repeatable actions"
+        description="Use rules to convert new evidence, missing items, and exceptions into the right owner notifications and review steps."
+        points={[
+          { title: 'Trigger on events', detail: 'Map rules to new records, status changes, and follow-up events.' },
+          { title: 'Escalate carefully', detail: 'Only push the items that really need human attention.' },
+          { title: 'Keep them active', detail: 'A paused rule is a broken safety net during reporting season.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Workflow Rules</h1>

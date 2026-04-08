@@ -9,7 +9,7 @@ export interface Tenant {
 export interface User {
   id: string;
   email: string;
-  role: 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
+  role: 'super_admin' | 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
   name: string;
 }
 
@@ -45,6 +45,7 @@ export interface WorkflowRule {
 
 export type IntegrationType = 
   | 'whatsapp_official' 
+  | 'whatsapp_evolution'
   | 'whatsapp_baileys' 
   | 'email' 
   | 'slack' 
@@ -115,7 +116,7 @@ export interface WorkflowInstance {
 
 export interface Report {
   id: string;
-  report_type: 'esg_summary' | 'operations_dashboard' | 'compliance_checklist' | 'custom';
+  report_type: 'esg_summary' | 'brsr_annual_report' | 'operations_dashboard' | 'compliance_checklist' | 'custom';
   title: string;
   status: string;
   generated_at: string;

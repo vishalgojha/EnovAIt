@@ -4,6 +4,7 @@ import type { SupportedChannel } from "../../api/schemas/channelSchemas.js";
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
 import { whatsappBaileysService } from "./whatsappBaileysService.js";
+import { whatsappEvolutionService } from "./whatsappEvolutionService.js";
 import { whatsappOfficialService } from "./whatsappOfficialService.js";
 import type { ChannelIngestResult, ChannelSendInput, ChannelSendResult, ChannelStatus } from "./types.js";
 
@@ -327,6 +328,8 @@ const isConfigured = (channel: SupportedChannel): boolean => {
   switch (channel) {
     case "whatsapp_official":
       return Boolean(env.WHATSAPP_META_ACCESS_TOKEN && env.WHATSAPP_META_PHONE_NUMBER_ID);
+    case "whatsapp_evolution":
+      return Boolean(env.EVOLUTION_API_BASE_URL && env.EVOLUTION_API_KEY);
     case "whatsapp_baileys":
       return true;
     case "email":
@@ -369,6 +372,26 @@ export const channelRegistry = {
           detail: "Sent via WhatsApp Official API"
         };
       }
+      case "whatsapp_evolution": {
+        if (!input.to) {
+          throw new AppError("Recipient phone is required for whatsapp_evolution", 400, "TO_REQUIRED");
+        }
+        if (!input.orgId) {
+          throw new AppError("Organization context is required for whatsapp_evolution", 400, "ORG_REQUIRED");
+        }
+        const result = await whatsappEvolutionService.sendText({
+          orgId: input.orgId,
+          to: input.to,
+          message: input.message,
+          integrationId: input.integrationId
+        });
+        return {
+          channel,
+          accepted: true,
+          external_id: result.message_id,
+          detail: `Sent via Evolution API instance ${result.instance}`
+        };
+      }
       case "whatsapp_baileys": {
         if (!input.to) {
           throw new AppError("Recipient phone is required for whatsapp_baileys", 400, "TO_REQUIRED");
@@ -406,7 +429,17 @@ export const channelRegistry = {
     }
   },
 
-  async status(channel: SupportedChannel): Promise<ChannelStatus> {
+  async status(channel: SupportedChannel, context?: { orgId?: string }): Promise<ChannelStatus> {
+    if (channel === "whatsapp_evolution") {
+      const configured = Boolean(env.EVOLUTION_API_BASE_URL && env.EVOLUTION_API_KEY);
+      return {
+        channel,
+        configured,
+        healthy: configured,
+        detail: configured ? (context?.orgId ? "configured" : "configured") : "not configured"
+      };
+    }
+
     if (channel === "whatsapp_baileys") {
       try {
         const status = await whatsappBaileysService.getStatus();

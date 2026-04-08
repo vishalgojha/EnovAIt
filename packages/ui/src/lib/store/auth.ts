@@ -12,7 +12,7 @@ interface Tenant {
 interface User {
   id: string;
   email: string;
-  role: 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
+  role: 'super_admin' | 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
   name: string;
 }
 

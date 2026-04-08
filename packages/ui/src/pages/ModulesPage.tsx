@@ -41,6 +41,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { adminApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { Module } from '@/types';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -141,6 +142,17 @@ export function ModulesPage() {
 
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Modules"
+        title="Each module defines one business area the AI can ingest and review"
+        description="Think of modules as the lanes of the enterprise operating model. Keep them simple, named by business domain, and aligned with how people already work."
+        points={[
+          { title: 'Keep them domain-specific', detail: 'Use one module for one real business stream like ESG, finance, or operations.' },
+          { title: 'Start small', detail: 'Enable only the modules needed for the current reporting cycle.' },
+          { title: 'Document clearly', detail: 'A clear description helps reviewers know what data belongs here.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Modules</h1>

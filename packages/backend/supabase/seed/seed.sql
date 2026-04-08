@@ -32,6 +32,33 @@ values
   'Maintenance',
   'Maintenance logs and severity tracking',
   '{"required_fields":["asset_id","issue_type","severity","reported_at"]}'::jsonb
+),
+(
+  '22222222-2222-2222-2222-222222222223',
+  '11111111-1111-1111-1111-111111111111',
+  'brsr',
+  'BRSR India',
+  'India-first BRSR reporting, evidence capture, and multi-channel assurance workflows',
+  '{
+    "framework":"BRSR",
+    "country":"India",
+    "multi_channel_sources":["whatsapp_official","whatsapp_baileys","email","web_widget","erp_crm","api_partner"],
+    "sections":["section_a_general_disclosures","section_b_management_process","section_c_principle_wise_performance"],
+    "required_record_types":[
+      "brsr_section_a_general_disclosure",
+      "brsr_section_b_management_disclosure",
+      "brsr_material_issue",
+      "brsr_principle_1",
+      "brsr_principle_2",
+      "brsr_principle_3",
+      "brsr_principle_4",
+      "brsr_principle_5",
+      "brsr_principle_6",
+      "brsr_principle_7",
+      "brsr_principle_8",
+      "brsr_principle_9"
+    ]
+  }'::jsonb
 )
 on conflict (id) do update
 set name = excluded.name,
@@ -196,6 +223,184 @@ values
   ]
   $$::jsonb,
   true
+),
+(
+  '33333333-3333-3333-3333-333333333333',
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222223',
+  'BRSR India Annual Filing Copilot',
+  $$
+  {
+    "type": "object",
+    "title": "BRSR India Annual Filing Copilot",
+    "x_report_profile": {
+      "id": "brsr_india_annual_v1",
+      "framework": "BRSR",
+      "country": "India",
+      "sections": ["section_a", "section_b", "section_c"],
+      "channels": ["whatsapp", "email", "web", "erp", "partner_api"],
+      "agent_jobs": [
+        "collect_general_disclosures",
+        "collect_management_policy_disclosures",
+        "collect_principle_wise_indicators",
+        "capture_supporting_evidence",
+        "flag_missing_assurance_and_value_chain_gaps"
+      ],
+      "extraction_rules": [
+        "Preserve BRSR section structure in extracted_fields.",
+        "Capture units exactly as disclosed in source material.",
+        "Separate essential indicators from leadership indicators.",
+        "Do not infer assurance, value chain coverage, or policy adoption without evidence."
+      ]
+    },
+    "properties": {
+      "section_a": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "listed_entity": {
+            "type": "object",
+            "properties": {
+              "cin": { "type": "string" },
+              "name": { "type": "string" },
+              "year_of_incorporation": { "type": "string" },
+              "registered_office": { "type": "string" },
+              "corporate_address": { "type": "string" },
+              "email": { "type": "string" },
+              "telephone": { "type": "string" },
+              "website": { "type": "string" },
+              "financial_year": { "type": "string" },
+              "listed_exchanges": { "type": "array", "items": { "type": "string" } },
+              "paid_up_capital": { "type": "string" },
+              "reporting_boundary": { "type": "string" },
+              "assurance_provider": { "type": "string" },
+              "assurance_type": { "type": "string" }
+            },
+            "required": ["name", "financial_year", "reporting_boundary"]
+          },
+          "operations": {
+            "type": "object",
+            "properties": {
+              "main_business_activity": { "type": "string" },
+              "products_services": { "type": "array", "items": { "type": "string" } },
+              "national_offices": { "type": "number" },
+              "international_offices": { "type": "number" },
+              "markets_served_states": { "type": "number" },
+              "exports_percent": { "type": "number" },
+              "customer_segments_summary": { "type": "string" }
+            },
+            "required": ["main_business_activity"]
+          },
+          "workforce": {
+            "type": "object",
+            "properties": {
+              "permanent_employees_total": { "type": "number" },
+              "other_than_permanent_employees_total": { "type": "number" },
+              "women_board_percent": { "type": "number" },
+              "women_kmp_percent": { "type": "number" },
+              "turnover_rate_summary": { "type": "string" }
+            }
+          },
+          "material_issues": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "issue_name": { "type": "string" },
+                "classification": { "type": "string", "enum": ["risk", "opportunity"] },
+                "rationale": { "type": "string" },
+                "mitigation_or_approach": { "type": "string" },
+                "financial_implication": { "type": "string" }
+              },
+              "required": ["issue_name", "classification", "rationale"]
+            }
+          }
+        },
+        "required": ["listed_entity", "operations", "material_issues"]
+      },
+      "section_b": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "principle_policies": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "principle": { "type": "string" },
+                "policy_in_place": { "type": "boolean" },
+                "board_approved": { "type": "boolean" },
+                "procedure_translated": { "type": "boolean" },
+                "extends_to_value_chain": { "type": "boolean" },
+                "standards_mapped": { "type": "array", "items": { "type": "string" } },
+                "goals_targets": { "type": "array", "items": { "type": "string" } },
+                "performance_summary": { "type": "string" }
+              },
+              "required": ["principle", "policy_in_place"]
+            }
+          },
+          "governance_oversight": {
+            "type": "object",
+            "properties": {
+              "responsible_director": { "type": "string" },
+              "sustainability_committee_exists": { "type": "boolean" },
+              "review_frequency": { "type": "string" },
+              "independent_policy_assessment": { "type": "boolean" }
+            },
+            "required": ["responsible_director", "sustainability_committee_exists"]
+          }
+        },
+        "required": ["principle_policies", "governance_oversight"]
+      },
+      "section_c": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "principles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "principle_number": { "type": "number" },
+                "principle_title": { "type": "string" },
+                "essential_indicators": { "type": "array", "items": { "type": "object" } },
+                "leadership_indicators": { "type": "array", "items": { "type": "object" } },
+                "evidence_refs": { "type": "array", "items": { "type": "string" } }
+              },
+              "required": ["principle_number", "principle_title", "essential_indicators"]
+            }
+          },
+          "readiness_summary": {
+            "type": "object",
+            "properties": {
+              "missing_principles": { "type": "array", "items": { "type": "string" } },
+              "missing_assurance_fields": { "type": "array", "items": { "type": "string" } },
+              "value_chain_coverage_gaps": { "type": "array", "items": { "type": "string" } },
+              "follow_up_actions": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        },
+        "required": ["principles"]
+      }
+    },
+    "required": ["section_a", "section_b", "section_c"]
+  }
+  $$::jsonb,
+  $$
+  [
+    { "id": "section_a.listed_entity.name", "question": "What is the legal name of the listed entity for this BRSR filing?" },
+    { "id": "section_a.listed_entity.financial_year", "question": "Which financial year does this BRSR report cover?" },
+    { "id": "section_a.listed_entity.reporting_boundary", "question": "Is the BRSR filing standalone or consolidated?" },
+    { "id": "section_a.operations.main_business_activity", "question": "What business activity contributes at least 90% of turnover?" },
+    { "id": "section_a.material_issues", "question": "List the top material responsible business conduct issues, whether each is a risk or opportunity, and the mitigation or business response." },
+    { "id": "section_b.principle_policies", "question": "For each BRSR principle P1 to P9, confirm policy availability, board approval, value-chain applicability, key standards, goals, and current-year performance." },
+    { "id": "section_b.governance_oversight.responsible_director", "question": "Who is the highest authority responsible for sustainability or BRSR oversight?" },
+    { "id": "section_c.principles", "question": "For each BRSR principle, provide essential indicators first, then leadership indicators, along with any supporting evidence references and units." },
+    { "id": "section_c.readiness_summary.missing_assurance_fields", "question": "Which BRSR data points still lack assurance, documentary support, or owner confirmation?" },
+    { "id": "section_c.readiness_summary.value_chain_coverage_gaps", "question": "Where are value-chain coverage disclosures weak or still missing?" }
+  ]
+  $$::jsonb,
+  true
 )
 on conflict (id) do update
 set name = excluded.name,
@@ -215,6 +420,39 @@ values
   '{"type":"create_workflow_instance","state":"pending","step":"manager_approval","notify":["in_app"]}'::jsonb,
   10,
   true
+),
+(
+  '44444444-4444-4444-4444-444444444442',
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222223',
+  'BRSR Missing Assurance Escalation',
+  'record.completed',
+  '{"path":"readiness_summary.missing_assurance_fields[0]","operator":"exists","value":true}'::jsonb,
+  '{"type":"create_workflow_instance","state":"pending","step":"assurance_review","notify":["in_app","email"]}'::jsonb,
+  20,
+  true
+),
+(
+  '44444444-4444-4444-4444-444444444444',
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222223',
+  'BRSR WhatsApp Reviewer Queue',
+  'record.completed',
+  '{"path":"record_type","operator":"eq","value":"brsr_whatsapp_evidence"}'::jsonb,
+  '{"type":"create_workflow_instance","state":"pending","step":"review_inbox","notify":["in_app","email"]}'::jsonb,
+  5,
+  true
+),
+(
+  '44444444-4444-4444-4444-444444444443',
+  '11111111-1111-1111-1111-111111111111',
+  '22222222-2222-2222-2222-222222222223',
+  'BRSR Value Chain Gap Review',
+  'record.completed',
+  '{"path":"section_c.readiness_summary.value_chain_coverage_gaps[0]","operator":"exists","value":true}'::jsonb,
+  '{"type":"create_workflow_instance","state":"pending","step":"value_chain_follow_up","notify":["in_app","webhook"]}'::jsonb,
+  30,
+  true
 )
 on conflict (id) do update
 set condition = excluded.condition,
@@ -229,13 +467,22 @@ values
   '66666666-6666-6666-6666-666666666661',
   '11111111-1111-1111-1111-111111111111',
   null,
+  'WhatsApp Evolution Demo',
+  'whatsapp_evolution',
+  '{"instance_name":"enovait-demo","webhook_path":"/api/v1/channels/whatsapp/evolution/webhook"}'::jsonb,
+  true
+),
+(
+  '66666666-6666-6666-6666-666666666662',
+  '11111111-1111-1111-1111-111111111111',
+  null,
   'WhatsApp Official Demo',
   'whatsapp_official',
   '{"channel":"official","api_version":"v22.0"}'::jsonb,
   true
 ),
 (
-  '66666666-6666-6666-6666-666666666662',
+  '66666666-6666-6666-6666-666666666663',
   '11111111-1111-1111-1111-111111111111',
   null,
   'WhatsApp Baileys Demo',

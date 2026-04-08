@@ -6,6 +6,7 @@ import type { Request, Response } from "express";
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
 import { createUserSupabaseClient, supabaseAdmin } from "../../lib/supabase.js";
+import { isReservedSuperAdminEmail } from "../../lib/superAdminBootstrap.js";
 import { SignInSchema, SignUpSchema } from "../schemas/authSchemas.js";
 
 const slugify = (value: string): string => {
@@ -85,7 +86,7 @@ const fetchAuthProfile = async (accessToken: string) => {
     user: {
       id: appUser.id,
       email: appUser.email,
-      role: appUser.role,
+      role: isReservedSuperAdminEmail(appUser.email) ? "super_admin" : appUser.role,
       name: appUser.full_name ?? appUser.email
     },
     tenant: {

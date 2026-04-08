@@ -16,3 +16,4 @@ const upload = multer({
 dataRouter.get("/records", asyncHandler(dataController.listRecords));
 dataRouter.get("/records/:id", asyncHandler(dataController.getRecord));
 dataRouter.post("/ingest/excel", upload.single("file"), asyncHandler(dataController.ingestExcel));
+dataRouter.post("/ingest/document", upload.single("file"), asyncHandler(dataController.ingestDocument));

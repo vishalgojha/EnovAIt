@@ -14,10 +14,13 @@ import { TemplatesPage } from '@/pages/TemplatesPage';
 import { WorkflowRulesPage } from '@/pages/WorkflowRulesPage';
 import { IntegrationsPage } from '@/pages/IntegrationsPage';
 import { DataRecordsPage } from '@/pages/DataRecordsPage';
+import { BRSRReadinessPage } from '@/pages/BRSRReadinessPage';
 import { WorkflowsPage } from '@/pages/WorkflowsPage';
 import { ReportsPage } from '@/pages/ReportsPage';
 import { ChannelsConsolePage } from '@/pages/ChannelsConsolePage';
 import { SettingsPage } from '@/pages/SettingsPage';
+import { PlatformConsolePage } from '@/pages/PlatformConsolePage';
+import { AIOpsPage } from '@/pages/AIOpsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +48,7 @@ export default function App() {
               
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardPage />} />
+                <Route path="readiness" element={<BRSRReadinessPage />} />
                 <Route path="modules" element={<ModulesPage />} />
                 <Route path="templates" element={<TemplatesPage />} />
                 <Route path="workflow-rules" element={<WorkflowRulesPage />} />
@@ -54,6 +58,8 @@ export default function App() {
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="channels" element={<ChannelsConsolePage />} />
                 <Route path="settings" element={<SettingsPage />} />
+                <Route path="platform" element={<PlatformConsolePage />} />
+                <Route path="ai-ops" element={<AIOpsPage />} />
               </Route>
 
               <Route path="*" element={<Navigate to="/" replace />} />

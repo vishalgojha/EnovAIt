@@ -5,6 +5,8 @@ export interface ChannelSendInput {
   subject?: string;
   message: string;
   metadata: Record<string, unknown>;
+  orgId?: string;
+  integrationId?: string;
 }
 
 export interface ChannelSendResult {

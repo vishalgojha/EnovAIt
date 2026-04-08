@@ -13,3 +13,7 @@ export const DataRecordIdParamSchema = z.object({
 export const ExcelIngestBodySchema = z.object({
   module_id: z.string().uuid()
 });
+
+export const DocumentIngestBodySchema = z.object({
+  module_id: z.string().uuid()
+});

@@ -22,6 +22,11 @@ apiClient.interceptors.request.use((config) => {
     config.headers['X-Tenant-ID'] = tenant.id;
   }
 
+  if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
+    delete config.headers['Content-Type'];
+    delete config.headers['content-type'];
+  }
+
   return config;
 });
 

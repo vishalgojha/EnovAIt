@@ -2,9 +2,11 @@ import type { Request, Response } from "express";
 
 import { AppError } from "../../lib/errors.js";
 import { getRequestContext } from "../../lib/requestContext.js";
+import { documentIngestionService } from "../../services/ingestion/documentIngestionService.js";
 import { excelIngestionService } from "../../services/ingestion/excelIngestionService.js";
 import {
   DataRecordIdParamSchema,
+  DocumentIngestBodySchema,
   ExcelIngestBodySchema,
   ListDataRecordsQuerySchema
 } from "../schemas/dataSchemas.js";
@@ -72,6 +74,26 @@ export const dataController = {
       module_id,
       req.file.buffer,
       req.file.originalname
+    );
+
+    res.status(202).json({ data: result });
+  },
+
+  async ingestDocument(req: Request, res: Response) {
+    const { module_id } = DocumentIngestBodySchema.parse(req.body);
+    const { auth, supabase } = getRequestContext(req);
+
+    if (!req.file?.buffer) {
+      throw new AppError("File is required", 400, "FILE_REQUIRED");
+    }
+
+    const result = await documentIngestionService.ingest(
+      supabase,
+      auth,
+      module_id,
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
     );
 
     res.status(202).json({ data: result });

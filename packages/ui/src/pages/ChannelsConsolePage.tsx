@@ -11,6 +11,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { channelApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -28,6 +29,7 @@ type ActivityItem = {
 };
 
 const channelOptions: ChannelOption[] = [
+  { value: 'whatsapp_evolution', label: 'WhatsApp Evolution' },
   { value: 'whatsapp_official', label: 'WhatsApp Official' },
   { value: 'whatsapp_baileys', label: 'WhatsApp Baileys' },
   { value: 'slack', label: 'Slack' },
@@ -51,7 +53,7 @@ const toHealthLabel = (healthy: boolean, configured: boolean): string => {
 };
 
 export function ChannelsConsolePage() {
-  const [selectedChannel, setSelectedChannel] = React.useState(channelOptions[0]?.value ?? 'whatsapp_official');
+  const [selectedChannel, setSelectedChannel] = React.useState(channelOptions[0]?.value ?? 'whatsapp_evolution');
   const [recipient, setRecipient] = React.useState('');
   const [message, setMessage] = React.useState('Test message from EnovAIt Console');
   const [recentActivity, setRecentActivity] = React.useState<ActivityItem[]>([]);
@@ -136,6 +138,17 @@ export function ChannelsConsolePage() {
 
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Channels"
+        title="Watch the intake channels that already power the evidence pipeline"
+        description="The console should make it obvious which channels are healthy, what messages were accepted, and where the team should intervene next."
+        points={[
+          { title: 'Check health', detail: 'Use the score to spot channels that need attention before data stops flowing.' },
+          { title: 'Send a test', detail: 'Test messages should always use the real provider path, not a fake stub.' },
+          { title: 'Track activity', detail: 'Recent sends give operators a quick audit trail for outbound communication.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Channels Console</h1>

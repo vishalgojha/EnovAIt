@@ -1,4 +1,4 @@
-import { api } from './client';
+import { api, apiClient } from './client';
 import { 
   Module, 
   Template, 
@@ -88,6 +88,17 @@ interface ArchonTaskRequest {
   goal: string;
   language?: string;
   context?: Record<string, unknown>;
+}
+
+interface IngestionResult {
+  file_name: string;
+  mime_type: string;
+  kind: 'pdf' | 'spreadsheet' | 'text' | 'unknown';
+  page_count?: number;
+  row_count?: number;
+  text_preview: string;
+  record_id: string;
+  ingestion_event_id: string;
 }
 
 export interface DashboardOverview {
@@ -291,6 +302,20 @@ export const authApi = {
 export const dataApi = {
   getRecords: async (params?: any) => (await api.get<DataRecordListEnvelope>('/data/records', params)).data,
   getRecord: async (id: string) => (await api.get<ApiEnvelope<DataRecord>>(`/data/records/${id}`)).data,
+  ingestDocument: async (moduleId: string, file: File): Promise<IngestionResult> => {
+    const formData = new FormData();
+    formData.append('module_id', moduleId);
+    formData.append('file', file);
+
+    return (await apiClient.post<ApiEnvelope<IngestionResult>>('/data/ingest/document', formData)).data;
+  },
+  ingestExcel: async (moduleId: string, file: File): Promise<IngestionResult> => {
+    const formData = new FormData();
+    formData.append('module_id', moduleId);
+    formData.append('file', file);
+
+    return (await apiClient.post<ApiEnvelope<IngestionResult>>('/data/ingest/excel', formData)).data;
+  },
 };
 
 export const workflowApi = {

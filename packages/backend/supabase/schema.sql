@@ -21,10 +21,10 @@ begin
     create type public.workflow_state as enum ('pending', 'approved', 'rejected', 'escalated', 'completed');
   end if;
   if not exists (select 1 from pg_type where typname = 'report_type') then
-    create type public.report_type as enum ('esg_summary', 'operations_dashboard', 'compliance_checklist', 'custom');
+    create type public.report_type as enum ('esg_summary', 'brsr_annual_report', 'operations_dashboard', 'compliance_checklist', 'custom');
   end if;
   if not exists (select 1 from pg_type where typname = 'integration_type') then
-    create type public.integration_type as enum ('excel', 'api', 'webhook', 'iot', 'whatsapp_baileys', 'whatsapp_official', 'email', 'slack', 'msteams', 'web_widget', 'mobile_sdk', 'sms', 'voice_ivr', 'iot_mqtt', 'erp_crm', 'api_partner');
+    create type public.integration_type as enum ('excel', 'api', 'webhook', 'iot', 'whatsapp_baileys', 'whatsapp_official', 'whatsapp_evolution', 'email', 'slack', 'msteams', 'web_widget', 'mobile_sdk', 'sms', 'voice_ivr', 'iot_mqtt', 'erp_crm', 'api_partner');
   end if;
   if not exists (select 1 from pg_type where typname = 'notification_channel') then
     create type public.notification_channel as enum ('in_app', 'email', 'webhook');
@@ -61,7 +61,7 @@ set search_path = public
 as $$
   select coalesce(
     (
-      select u.role in ('owner', 'admin')
+      select u.role in ('super_admin', 'owner', 'admin')
       from public.users u
       where u.id = auth.uid() and u.is_active = true
       limit 1
@@ -108,7 +108,7 @@ create table if not exists public.users (
   org_id uuid not null references public.organizations(id) on delete restrict,
   email text not null,
   full_name text,
-  role text not null default 'member' check (role in ('owner', 'admin', 'manager', 'member', 'viewer')),
+  role text not null default 'member' check (role in ('super_admin', 'owner', 'admin', 'manager', 'member', 'viewer')),
   profile jsonb not null default '{}'::jsonb,
   is_active boolean not null default true,
   created_by uuid references auth.users(id),
@@ -484,6 +484,22 @@ from public.data_records dr
 join public.modules m on m.id = dr.module_id
 where m.code = 'esg'
 group by dr.org_id, dr.module_id, date_trunc('month', dr.effective_at);
+
+create or replace view public.v_brsr_readiness as
+select
+  dr.org_id,
+  dr.module_id,
+  count(*) as total_records,
+  count(*) filter (where dr.record_type = 'brsr_section_a_general_disclosure') as section_a_records,
+  count(*) filter (where dr.record_type = 'brsr_section_b_management_disclosure') as section_b_records,
+  count(*) filter (where dr.record_type like 'brsr_principle_%') as principle_records,
+  count(*) filter (where dr.record_type = 'brsr_material_issue') as material_issue_records,
+  array_agg(distinct dr.source_channel) as source_channels,
+  max(dr.effective_at) as latest_effective_at
+from public.data_records dr
+join public.modules m on m.id = dr.module_id
+where m.code in ('brsr', 'esg')
+group by dr.org_id, dr.module_id;
 
 create or replace view public.v_operations_dashboard as
 select

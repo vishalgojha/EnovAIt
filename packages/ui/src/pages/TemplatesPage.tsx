@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { adminApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { Template } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -54,6 +55,17 @@ export function TemplatesPage() {
 
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Templates"
+        title="Templates turn repeated evidence requests into guided intake"
+        description="Use templates to shape what people submit, which fields matter, and how the AI should classify the response."
+        points={[
+          { title: 'Capture once', detail: 'Templates reduce back-and-forth by asking for the right fields up front.' },
+          { title: 'Reuse often', detail: 'Start from a proven template instead of rebuilding the same intake every month.' },
+          { title: 'Keep it readable', detail: 'The AI and the reviewer should both understand the schema at a glance.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Templates</h1>

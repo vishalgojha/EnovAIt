@@ -15,7 +15,10 @@ export class OpenAIExtractionProvider implements AIExtractionProvider {
   private readonly client: OpenAI;
 
   constructor() {
-    this.client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+    this.client = new OpenAI({
+      apiKey: env.OPENAI_API_KEY ?? "local-api-key",
+      baseURL: env.OPENAI_BASE_URL
+    });
   }
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {

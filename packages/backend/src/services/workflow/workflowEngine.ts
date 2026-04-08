@@ -26,7 +26,7 @@ interface RunWorkflowInput {
   moduleId: string;
   dataRecordId: string;
   recordData: Record<string, unknown>;
-  actorUserId: string;
+  actorUserId?: string | null;
   triggerEvent: string;
 }
 
@@ -109,14 +109,14 @@ export const workflowEngine = {
           history: [
             {
               at: new Date().toISOString(),
-              by: input.actorUserId,
+              by: input.actorUserId ?? "system",
               transition: "created",
               state,
               step
             }
           ],
-          created_by: input.actorUserId,
-          updated_by: input.actorUserId
+          created_by: input.actorUserId ?? null,
+          updated_by: input.actorUserId ?? null
         })
         .select("id")
         .single();
@@ -143,8 +143,8 @@ export const workflowEngine = {
                 data_record_id: input.dataRecordId,
                 module_id: input.moduleId
               },
-              created_by: input.actorUserId,
-              updated_by: input.actorUserId
+              created_by: input.actorUserId ?? null,
+              updated_by: input.actorUserId ?? null
             });
 
             if (notificationError) {

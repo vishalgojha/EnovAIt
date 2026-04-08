@@ -12,10 +12,11 @@ const EnvSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
   SUPABASE_JWT_SECRET: z.string().min(1),
 
-  AI_PROVIDER: z.enum(["openai", "anthropic", "openrouter", "grok"]).default("openai"),
+  AI_PROVIDER: z.enum(["openai", "openai_compatible", "anthropic", "openrouter", "grok"]).default("openai"),
   AI_MODEL: z.string().default("gpt-4o-mini"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().optional(),
+  OPENAI_BASE_URL: z.string().url().optional(),
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
@@ -26,6 +27,8 @@ const EnvSchema = z.object({
   AI_RETRY_BASE_MS: z.coerce.number().int().min(50).max(10000).default(400),
 
   WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
+  EVOLUTION_API_BASE_URL: z.string().url().optional(),
+  EVOLUTION_API_KEY: z.string().optional(),
   WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_META_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_META_API_VERSION: z.string().default("v22.0"),
@@ -79,12 +82,20 @@ if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai");
 }
 
+if (env.AI_PROVIDER === "openai_compatible" && !env.OPENAI_BASE_URL) {
+  throw new Error("OPENAI_BASE_URL is required when AI_PROVIDER=openai_compatible");
+}
+
 if (env.AI_PROVIDER === "anthropic" && !env.ANTHROPIC_API_KEY) {
   throw new Error("ANTHROPIC_API_KEY is required when AI_PROVIDER=anthropic");
 }
 
 if (env.AI_PROVIDER === "openrouter" && !env.OPENROUTER_API_KEY) {
   throw new Error("OPENROUTER_API_KEY is required when AI_PROVIDER=openrouter");
+}
+
+if (!env.EVOLUTION_API_BASE_URL && env.EVOLUTION_API_KEY) {
+  throw new Error("EVOLUTION_API_BASE_URL is required when EVOLUTION_API_KEY is set");
 }
 
 export const tenantRateLimitOverrides = (() => {

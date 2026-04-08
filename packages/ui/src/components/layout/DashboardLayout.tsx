@@ -12,12 +12,12 @@ export function DashboardLayout() {
   }
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex min-h-screen bg-background text-foreground">
       <Sidebar />
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex min-w-0 flex-1 flex-col px-4 py-4 md:px-5">
         <Navbar />
-        <main className="flex-1 p-6 overflow-y-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
+        <main className="flex-1 overflow-y-auto">
+          <div className="mx-auto mt-4 max-w-[1380px] rounded-[2rem] border border-white/60 bg-white/80 p-6 shadow-[0_20px_70px_rgba(28,39,51,0.08)] backdrop-blur-xl md:p-8">
             <Outlet />
           </div>
         </main>

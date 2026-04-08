@@ -9,7 +9,8 @@ import {
   MoreVertical,
   FilePieChart,
   FileBarChart,
-  FileSearch
+  FileSearch,
+  Building2
 } from 'lucide-react';
 import { 
   Card, 
@@ -30,12 +31,14 @@ import {
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { reportApi } from '@/lib/api/endpoints';
+import { BlockGuide } from '@/components/layout/BlockGuide';
 import { Report } from '@/types';
 import { cn } from '@/lib/utils';
 import { Trash2 } from 'lucide-react';
 
 const reportTypeIcons: Record<string, React.ComponentType<{ className?: string }>> = {
   esg_summary: FilePieChart,
+  brsr_annual_report: Building2,
   operations_dashboard: FileBarChart,
   compliance_checklist: FileSearch,
   custom: FileText,
@@ -66,10 +69,21 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
+      <BlockGuide
+        eyebrow="Reporting"
+        title="Turn live evidence into filing-ready reports"
+        description="This page should show that the report is not a static document. It is the output of continuous ingestion, reviewer approvals, and the live readiness state."
+        points={[
+          { title: 'Generate', detail: 'Use the latest evidence set to create a BRSR-ready output draft.' },
+          { title: 'Review', detail: 'Keep in-progress reports visible so nothing disappears into a quarterly black box.' },
+          { title: 'Download', detail: 'Only completed reports should be downloadable to maintain governance.' },
+        ]}
+      />
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Generate and manage data visualizations and audit reports.</p>
+          <p className="text-muted-foreground">Generate and manage BRSR-ready outputs, dashboards, and audit reports.</p>
         </div>
         <Button>
           <Plus className="mr-2 h-4 w-4" />
