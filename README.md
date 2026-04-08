@@ -1,30 +1,73 @@
 # EnovAIt
 
-## Run backend in one command
+EnovAIt is an India-first ESG and BRSR operations platform. It ingests evidence from WhatsApp, email, files, and system feeds, then turns that into reviewer queues, readiness tracking, and filing outputs.
 
-From the repo root:
+## Quick Start
+
+Before running the backend, create the backend env file:
+
+```powershell
+Copy-Item .\packages\backend\.env.example .\packages\backend\.env
+```
+
+Fill in the required Supabase values in `packages/backend/.env`:
+- `SUPABASE_URL`
+- `SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_JWT_SECRET`
+
+Optional AI providers:
+- `AI_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`
+- `AI_PROVIDER=openrouter` with `OPENROUTER_API_KEY`
+- `AI_PROVIDER=openai_compatible` with `OPENAI_BASE_URL`
+
+## Commands
+
+Run the backend in one command:
 
 ```powershell
 npm run backend
 ```
 
-What it does:
-
-1. Builds the backend.
-2. Starts the backend server.
-
-Before running it, make sure `packages/backend/.env` exists and contains the required Supabase and AI settings from `packages/backend/.env.example`.
-
-## Other useful commands
+Run the backend in watch mode:
 
 ```powershell
 npm run dev
 ```
 
-Runs the backend in watch mode.
+Run the UI locally:
 
 ```powershell
 npm run dev:ui
 ```
 
-Runs the UI locally.
+Build the backend:
+
+```powershell
+npm run build
+```
+
+Build the UI:
+
+```powershell
+npm run build:ui
+```
+
+## What This Includes
+
+- ESG and BRSR evidence ingestion
+- WhatsApp-based intake via supported providers
+- reviewer workflows and readiness tracking
+- subscription and seat management
+- EnovAIt super admin controls
+- Archon orchestration for longer reasoning tasks
+
+## Demo Notes
+
+For the April 10 demo, the product should be presented as a live ESG operations system, not a generic chatbot. The flow is:
+
+1. Teams send daily or weekly ESG evidence.
+2. EnovAIt ingests and classifies it.
+3. Reviewers handle exceptions.
+4. Leadership sees readiness before audit time.
+
