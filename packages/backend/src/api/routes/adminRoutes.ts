@@ -11,6 +11,8 @@ adminRouter.use(requireAdmin);
 adminRouter.get("/platform/summary", asyncHandler(adminController.getPlatformSummary));
 adminRouter.get("/platform/logs", asyncHandler(adminController.listPlatformLogs));
 adminRouter.get("/platform/approvals", asyncHandler(adminController.listPlatformApprovals));
+adminRouter.get("/platform/secrets", asyncHandler(adminController.getPlatformSecrets));
+adminRouter.put("/platform/secrets", asyncHandler(adminController.updatePlatformSecrets));
 
 adminRouter.get("/modules", asyncHandler(adminController.listModules));
 adminRouter.post("/modules", asyncHandler(adminController.createModule));

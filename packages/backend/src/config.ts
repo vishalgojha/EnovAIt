@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
 import { fileURLToPath } from "node:url";
+import path from "node:path";
 import { z } from "zod";
 
 dotenv.config({
@@ -78,8 +79,34 @@ const EnvSchema = z.object({
 
   WEBHOOK_SIGNING_SECRET: z.string().optional()
 });
+const backendEnvPath = path.join(process.cwd(), "packages", "backend", ".env");
+const requiredEnvNames = ["SUPABASE_URL", "SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY", "SUPABASE_JWT_SECRET"] as const;
 
-export const env = EnvSchema.parse(process.env);
+function failWithSetupHint(message: string): never {
+  throw new Error(
+    `${message}\n\n` +
+      `To start EnovAIt, fill in the backend settings file at:\n` +
+      `${backendEnvPath}\n\n` +
+      `You can copy the example file first, then replace the placeholder values in it.\n` +
+      `Required values: ${requiredEnvNames.join(", ")}`
+  );
+}
+
+const parsedEnvResult = EnvSchema.safeParse(process.env);
+
+if (!parsedEnvResult.success) {
+  const missingRequired = parsedEnvResult.error.issues
+    .filter((issue) => issue.path.length === 1 && requiredEnvNames.includes(issue.path[0] as (typeof requiredEnvNames)[number]))
+    .map((issue) => String(issue.path[0]));
+
+  if (missingRequired.length > 0) {
+    failWithSetupHint(`Backend settings are incomplete. Missing required values: ${missingRequired.join(", ")}.`);
+  }
+
+  throw parsedEnvResult.error;
+}
+
+export const env = parsedEnvResult.data;
 
 if (env.AI_PROVIDER === "openai" && !env.OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY is required when AI_PROVIDER=openai");

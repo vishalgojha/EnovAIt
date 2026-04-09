@@ -2,6 +2,8 @@ import type { Request, Response } from "express";
 
 import { AppError } from "../../lib/errors.js";
 import { getRequestContext } from "../../lib/requestContext.js";
+import { logger } from "../../lib/logger.js";
+import { readSecretsEnvironmentStatus, SecretsEnvironmentSchema, writeSecretsEnvironment } from "../../lib/secretsEnvironment.js";
 import {
   ResourceIdParamSchema,
   UpsertIntegrationSchema,
@@ -399,6 +401,38 @@ export const adminController = {
     }
 
     res.status(200).json({ data });
+  },
+
+  async getPlatformSecrets(_req: Request, res: Response) {
+    const status = await readSecretsEnvironmentStatus();
+
+    res.status(200).json({
+      data: status
+    });
+  },
+
+  async updatePlatformSecrets(req: Request, res: Response) {
+    const payload = SecretsEnvironmentSchema.parse(req.body);
+    const { auth } = getRequestContext(req);
+
+    const status = await writeSecretsEnvironment(payload);
+
+    logger.info(
+      {
+        actor: auth.email,
+        aiProvider: status.aiProvider,
+        path: status.path
+      },
+      "Updated EnovAIt secrets environment"
+    );
+
+    res.status(200).json({
+      data: {
+        ...status,
+        restartRequired: true,
+        message: "Secrets saved. Restart the backend to apply the new values."
+      }
+    });
   },
 
   async updateOrgSettings(req: Request, res: Response) {

@@ -43,6 +43,29 @@ interface PlatformApprovalItem {
   updatedAt: string;
 }
 
+interface SecretsEnvironmentStatus {
+  path: string;
+  required: Record<'SUPABASE_URL' | 'SUPABASE_ANON_KEY' | 'SUPABASE_SERVICE_ROLE_KEY' | 'SUPABASE_JWT_SECRET', boolean>;
+  aiProvider: string | null;
+  aiKeys: {
+    anthropic: boolean;
+    openrouter: boolean;
+    openaiCompatible: boolean;
+  };
+}
+
+interface SecretsEnvironmentUpdate {
+  SUPABASE_URL: string;
+  SUPABASE_ANON_KEY: string;
+  SUPABASE_SERVICE_ROLE_KEY: string;
+  SUPABASE_JWT_SECRET: string;
+  AI_PROVIDER?: 'anthropic' | 'openrouter' | 'openai_compatible';
+  ANTHROPIC_API_KEY?: string;
+  OPENROUTER_API_KEY?: string;
+  OPENAI_BASE_URL?: string;
+  OPENAI_API_KEY?: string;
+}
+
 interface RawModule {
   id: string;
   code: string;
@@ -263,6 +286,10 @@ export const adminApi = {
     (await api.get<ApiEnvelope<PlatformLogItem[]>>('/admin/platform/logs', params)).data,
   getPlatformApprovals: async (params?: { limit?: number }): Promise<PlatformApprovalItem[]> =>
     (await api.get<ApiEnvelope<PlatformApprovalItem[]>>('/admin/platform/approvals', params)).data,
+  getPlatformSecrets: async (): Promise<SecretsEnvironmentStatus> =>
+    (await api.get<ApiEnvelope<SecretsEnvironmentStatus>>('/admin/platform/secrets')).data,
+  savePlatformSecrets: async (data: SecretsEnvironmentUpdate): Promise<SecretsEnvironmentStatus & { restartRequired: boolean; message: string }> =>
+    (await api.put<ApiEnvelope<SecretsEnvironmentStatus & { restartRequired: boolean; message: string }>>('/admin/platform/secrets', data)).data,
 
   // Modules
   getModules: async (): Promise<Module[]> => {
