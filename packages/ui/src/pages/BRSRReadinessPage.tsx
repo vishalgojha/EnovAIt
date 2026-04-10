@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CheckCircle2,
   FileUp,
+  Info,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react';
@@ -14,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BlockGuide } from '@/components/layout/BlockGuide';
+import { BRSRGlossary, InlineGuidance } from '@/components/layout/BRSRGlossary';
 import { Progress } from '@/components/ui/progress';
 import { brsrReadinessApi, dataApi } from '@/lib/api/endpoints';
 
@@ -45,6 +47,8 @@ export function BRSRReadinessPage() {
     queryFn: () => dataApi.getRecords({ limit: 200, offset: 0 }).then((result) => result.data),
   });
 
+  const [expandedPrinciple, setExpandedPrinciple] = useState<string | null>(null);
+
   const brsrRecords = useMemo(
     () =>
       records.filter((record) =>
@@ -54,6 +58,8 @@ export function BRSRReadinessPage() {
   );
 
   const isLoading = readinessLoading;
+
+  const principleKey = (principle: string) => principle.toLowerCase().replace(/\s+/g, '');
 
   const sectionLabels: Record<string, string> = {
     section_a: 'Section A: General Disclosures',
@@ -227,41 +233,61 @@ export function BRSRReadinessPage() {
 
       {/* Principle-wise coverage */}
       <Card className="rounded-[1.7rem] border-white/70 bg-white/85 shadow-none">
-        <CardHeader>
-          <CardTitle>Principle-wise coverage</CardTitle>
-          <CardDescription>Track evidence for each of the 9 BRSR principles.</CardDescription>
+        <CardHeader className="flex flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Principle-wise coverage</CardTitle>
+            <CardDescription>Track evidence for each of the 9 BRSR principles.</CardDescription>
+          </div>
+          <BRSRGlossary />
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {(principleDetails ?? []).map((p) => (
-              <div key={p.principle} className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{p.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
-                  </div>
-                  <Badge variant={p.evidenceCount > 0 ? 'default' : 'secondary'} className="rounded-full shrink-0">
-                    {p.evidenceCount > 0 ? `${p.evidenceCount}` : '—'}
-                  </Badge>
-                </div>
-                <Progress value={p.coveragePercent} className="mt-3" />
-                {p.totalEssentialIndicators > 0 && (
-                  <p className="mt-2 text-[10px] text-muted-foreground">
-                    {p.essentialIndicators}/{p.totalEssentialIndicators} essential, {p.leadershipIndicators}/{p.totalLeadershipIndicators} leadership
-                  </p>
-                )}
-                {p.indicatorsExtracted.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {p.indicatorsExtracted.slice(0, 4).map((ind) => (
-                      <Badge key={ind} variant="outline" className="rounded-full text-[9px]">{ind.replace(/_/g, ' ')}</Badge>
-                    ))}
-                    {p.indicatorsExtracted.length > 4 && (
-                      <Badge variant="outline" className="rounded-full text-[9px]">+{p.indicatorsExtracted.length - 4} more</Badge>
+            {(principleDetails ?? []).map((p) => {
+              const key = principleKey(p.principle);
+              const isExpanded = expandedPrinciple === key;
+              return (
+                <div key={p.principle}>
+                  <div className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{p.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          className="h-6 w-6 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+                          onClick={() => setExpandedPrinciple(isExpanded ? null : key)}
+                          aria-label="Show guidance"
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </button>
+                        <Badge variant={p.evidenceCount > 0 ? 'default' : 'secondary'} className="rounded-full">
+                          {p.evidenceCount > 0 ? `${p.evidenceCount}` : '—'}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Progress value={p.coveragePercent} className="mt-3" />
+                    {p.totalEssentialIndicators > 0 && (
+                      <p className="mt-2 text-[10px] text-muted-foreground">
+                        {p.essentialIndicators}/{p.totalEssentialIndicators} essential, {p.leadershipIndicators}/{p.totalLeadershipIndicators} leadership
+                      </p>
+                    )}
+                    {p.indicatorsExtracted.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-1">
+                        {p.indicatorsExtracted.slice(0, 4).map((ind) => (
+                          <Badge key={ind} variant="outline" className="rounded-full text-[9px]">{ind.replace(/_/g, ' ')}</Badge>
+                        ))}
+                        {p.indicatorsExtracted.length > 4 && (
+                          <Badge variant="outline" className="rounded-full text-[9px]">+{p.indicatorsExtracted.length - 4} more</Badge>
+                        )}
+                      </div>
                     )}
                   </div>
-                )}
-              </div>
-            ))}
+                  {isExpanded && <InlineGuidance principleId={key} />}
+                </div>
+              );
+            })}
           </div>
         </CardContent>
       </Card>

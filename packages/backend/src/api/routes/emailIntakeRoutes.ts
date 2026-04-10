@@ -7,3 +7,4 @@ export const emailIntakeRouter = Router();
 
 emailIntakeRouter.post("/webhook", asyncHandler(emailIntakeController.receiveEmail));
 emailIntakeRouter.post("/forward", asyncHandler(emailIntakeController.forwardEvidence));
+emailIntakeRouter.get("/templates", asyncHandler(emailIntakeController.getTemplates));

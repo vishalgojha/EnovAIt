@@ -4,6 +4,7 @@ import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
 import { logger } from "../../lib/logger.js";
 import { emailIntakeService } from "../../services/intake/emailIntakeService.js";
+import { getEmailTemplates } from "../../services/intake/emailTemplates.js";
 
 export const emailIntakeController = {
   async receiveEmail(req: Request, res: Response) {
@@ -44,6 +45,14 @@ export const emailIntakeController = {
         recordId: result.recordId,
         title: result.title,
       },
+    });
+  },
+
+  async getTemplates(_req: Request, res: Response) {
+    const templates = getEmailTemplates();
+
+    res.status(200).json({
+      data: templates,
     });
   }
 };

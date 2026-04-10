@@ -21,6 +21,8 @@ import { ChannelsConsolePage } from '@/pages/ChannelsConsolePage';
 import { SettingsPage } from '@/pages/SettingsPage';
 import { PlatformConsolePage } from '@/pages/PlatformConsolePage';
 import { SecretsPage } from '@/pages/SecretsPage';
+import { SetupWizardPage } from '@/pages/SetupWizard';
+import { EmailTemplatesPage } from '@/pages/EmailTemplatesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +47,7 @@ export default function App() {
               <Route path="/" element={<LandingPage />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/signup" element={<SignupPage />} />
+              <Route path="/setup" element={<SetupWizardPage />} />
               
               <Route path="/dashboard" element={<DashboardLayout />}>
                 <Route index element={<DashboardPage />} />
@@ -57,6 +60,7 @@ export default function App() {
                 <Route path="workflows" element={<WorkflowsPage />} />
                 <Route path="reports" element={<ReportsPage />} />
                 <Route path="channels" element={<ChannelsConsolePage />} />
+                <Route path="email-templates" element={<EmailTemplatesPage />} />
                 <Route path="settings" element={<SettingsPage />} />
                 <Route path="platform" element={<PlatformConsolePage />} />
                 <Route path="secrets" element={<SecretsPage />} />

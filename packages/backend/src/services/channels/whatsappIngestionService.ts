@@ -1,9 +1,11 @@
 import { randomUUID } from "crypto";
 
+import { env } from "../../config.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { AppError } from "../../lib/errors.js";
 import { brsrExtractionService } from "../extraction/brsrExtractionService.js";
 import { workflowEngine } from "../workflow/workflowEngine.js";
+import { whatsappOfficialService } from "./whatsappOfficialService.js";
 
 type WhatsAppProvider = "official" | "baileys" | "generic";
 
@@ -205,6 +207,50 @@ const buildRecordTitle = (message: NormalizedWhatsAppMessage): string => {
   return `WhatsApp ${name} - ${label.slice(0, 48)}`;
 };
 
+const ONBOARDING_KEYWORDS = ["hi", "hello", "help", "start", "what is", "how do", "setup", "configure"];
+
+const isOnboardingMessage = (text: string | null): boolean => {
+  if (!text) return false;
+  const lower = text.toLowerCase().trim();
+  return ONBOARDING_KEYWORDS.some((keyword) => lower.includes(keyword) || lower.startsWith(keyword));
+};
+
+const ONBOARDING_REPLY = `Welcome to EnovAIt BRSR Copilot!
+
+I help your team submit ESG evidence for BRSR filing.
+
+Send me:
+- Energy bills (photos/PDFs)
+- Water consumption data
+- Employee training records
+- Policy documents
+- Any ESG-related file or message
+
+I cover:
+P1: Ethics & Governance
+P2: Sustainable Products
+P3: Employee Well-being
+P4: Stakeholder Engagement
+P5: Human Rights
+P6: Environment (Energy, Water, Emissions, Waste)
+P7: Policy Advocacy
+P8: Inclusive Growth
+P9: Consumer Value
+
+Just type your data or upload a file. I will sort it into the right BRSR section!`;
+
+const sendOnboardingReply = async (provider: WhatsAppProvider, toPhone: string): Promise<void> => {
+  if (provider === "official") {
+    if (!env.WHATSAPP_META_ACCESS_TOKEN || !env.WHATSAPP_META_PHONE_NUMBER_ID) {
+      throw new AppError("WhatsApp Official is not configured", 400, "WHATSAPP_OFFICIAL_NOT_CONFIGURED");
+    }
+    await whatsappOfficialService.sendText(toPhone, ONBOARDING_REPLY);
+  } else {
+    // For baileys/generic: not yet supported, skip silently
+    return;
+  }
+};
+
 export const whatsappIngestionService = {
   async ingestWebhook(payload: unknown, integrationId?: string, provider: WhatsAppProvider = "official") {
     const integration = await resolveIntegration(integrationId);
@@ -222,6 +268,35 @@ export const whatsappIngestionService = {
         event_ids: [],
         summary: {
           detail: "No inbound WhatsApp messages were detected in the payload"
+        }
+      };
+    }
+
+    // Check for onboarding keywords before creating data records
+    const onboardingMessages = messages.filter((m) => isOnboardingMessage(m.text) && !m.media_url);
+    if (onboardingMessages.length > 0 && onboardingMessages.length === messages.length) {
+      // All messages are onboarding queries -- reply and skip ingestion
+      for (const message of onboardingMessages) {
+        const phone = message.from;
+        if (phone) {
+          try {
+            await sendOnboardingReply(provider, phone);
+          } catch {
+            // Log but don't fail the webhook
+          }
+        }
+      }
+      return {
+        integration_id: integration.id,
+        org_id: integration.org_id,
+        module_id: moduleId,
+        provider,
+        onboarding: true,
+        message_count: 0,
+        record_ids: [],
+        event_ids: [],
+        summary: {
+          detail: "Onboarding reply sent to user"
         }
       };
     }

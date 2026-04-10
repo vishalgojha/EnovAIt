@@ -202,6 +202,45 @@ const flattenEvolutionWebhook = (payload: unknown) => {
   ];
 };
 
+const ONBOARDING_KEYWORDS = ["hi", "hello", "help", "start", "what is", "how do", "setup", "configure"];
+
+const isOnboardingMessage = (text: string | null): boolean => {
+  if (!text) return false;
+  const lower = text.toLowerCase().trim();
+  return ONBOARDING_KEYWORDS.some((keyword) => lower.includes(keyword) || lower.startsWith(keyword));
+};
+
+const ONBOARDING_REPLY = `Welcome to EnovAIt BRSR Copilot!
+
+I help your team submit ESG evidence for BRSR filing.
+
+Send me:
+- Energy bills (photos/PDFs)
+- Water consumption data
+- Employee training records
+- Policy documents
+- Any ESG-related file or message
+
+I cover:
+P1: Ethics & Governance
+P2: Sustainable Products
+P3: Employee Well-being
+P4: Stakeholder Engagement
+P5: Human Rights
+P6: Environment (Energy, Water, Emissions, Waste)
+P7: Policy Advocacy
+P8: Inclusive Growth
+P9: Consumer Value
+
+Just type your data or upload a file. I will sort it into the right BRSR section!`;
+
+const extractPhoneFromSender = (sender: string | null): string | null => {
+  if (!sender) return null;
+  // sender could be "919876543210@s.whatsapp.net" or a plain number
+  const match = sender.match(/^(\d+)/);
+  return match ? match[1] : null;
+};
+
 const flattenGenericWebhook = (payload: unknown) => {
   const root = asRecord(payload);
   const messages: Array<{
@@ -323,6 +362,32 @@ export const whatsappEvolutionService = {
         record_ids: [],
         event_ids: [],
         summary: { detail: "No inbound Evolution payload matched a WhatsApp message" }
+      };
+    }
+
+    // Check for onboarding keywords before creating data records
+    const onboardingMessages = messages.filter((m) => isOnboardingMessage(m.text) && !m.media_url);
+    if (onboardingMessages.length > 0 && onboardingMessages.length === messages.length) {
+      for (const message of onboardingMessages) {
+        const phone = extractPhoneFromSender(message.from);
+        if (phone) {
+          try {
+            await this.sendText({ orgId: integration.org_id, to: phone, message: ONBOARDING_REPLY, integrationId: integration.id });
+          } catch {
+            // Log but don't fail the webhook
+          }
+        }
+      }
+      return {
+        integration_id: integration.id,
+        org_id: integration.org_id,
+        module_id: moduleId,
+        provider: "evolution" as const,
+        onboarding: true,
+        message_count: 0,
+        record_ids: [],
+        event_ids: [],
+        summary: { detail: "Onboarding reply sent to user" }
       };
     }
 
