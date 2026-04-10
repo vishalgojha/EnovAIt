@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 
 import { AppError } from "../../lib/errors.js";
 import type { AuthContext } from "../../types/auth.js";
+import { brsrExtractionService } from "../extraction/brsrExtractionService.js";
 import { workflowEngine } from "../workflow/workflowEngine.js";
 
 interface IngestionSummary {
@@ -200,6 +201,24 @@ export const documentIngestionService = {
       actorUserId: auth.userId,
       triggerEvent: "record.completed"
     });
+
+    // Run BRSR AI extraction for classification if this is a BRSR module
+    const { data: moduleData } = await supabase
+      .from("modules")
+      .select("code")
+      .eq("id", moduleId)
+      .single();
+
+    if (moduleData && (moduleData.code === "brsr" || moduleData.code === "esg")) {
+      await brsrExtractionService.processIngestedDocument(
+        supabase,
+        auth,
+        moduleId,
+        extractedText,
+        fileName,
+        record.id
+      );
+    }
 
     return {
       file_name: fileName,

@@ -419,6 +419,45 @@ export const archonApi = {
     (await api.post<ApiEnvelope<ArchonTaskResult>>('/archon/tasks', payload)).data,
 };
 
+export const brsrReadinessApi = {
+  getReadiness: async () =>
+    (await api.get<ApiEnvelope<{
+      overallScore: number;
+      sectionCoverage: Array<{ section: string; label: string; description: string; covered: boolean; evidenceCount: number; latestEvidenceAt: string | null; evidenceKinds: string[] }>;
+      totalEvidence: number;
+      totalRecords: number;
+      sourceChannels: string[];
+      lastIngestedAt: string | null;
+      readinessLevel: string;
+    }>>('/brsr-readiness')).data,
+  getSectionDetail: async () =>
+    (await api.get<ApiEnvelope<Array<{ section: string; label: string; description: string; coveragePercent: number; evidenceCount: number; evidenceKinds: string[]; records: Array<{ id: string; title: string; recordType: string; sourceChannel: string; createdAt: string; status: string }> }>>>('/brsr-readiness/sections')).data,
+  getPrincipleDetail: async () =>
+    (await api.get<ApiEnvelope<Array<{ principle: number; title: string; description: string; coveragePercent: number; evidenceCount: number; essentialIndicators: number; leadershipIndicators: number; totalEssentialIndicators: number; totalLeadershipIndicators: number; indicatorsExtracted: string[]; latestEvidenceAt: string | null; records: Array<{ id: string; title: string; recordType: string; sourceChannel: string; createdAt: string; status: string }> }>>>('/brsr-readiness/principles')).data,
+  getGaps: async () =>
+    (await api.get<ApiEnvelope<{ gaps: Array<{ section: string; label: string; type: string; severity: string; description: string; recommendedAction: string }>; totalGaps: number; criticalGaps: number; recommendedActions: string[] }>>('/brsr-readiness/gaps')).data,
+};
+
+export const reviewApi = {
+  getReviewQueue: async () =>
+    (await api.get<ApiEnvelope<Array<{ id: string; title: string; recordType: string; status: string; sourceChannel: string; createdAt: string; brsrSection: string | null; brsrPrinciples: number[]; confidence: number; needsReview: boolean }>>>('/review/queue')).data,
+  getReviewDetail: async (id: string) =>
+    (await api.get<ApiEnvelope<{ id: string; title: string; recordType: string; status: string; sourceChannel: string; createdAt: string; updatedAt: string; data: Record<string, unknown>; brsrSection: string | null; brsrPrinciples: number[]; confidence: number; missingFields: string[]; evidenceKinds: string[]; recommendedActions: string[]; workflowHistory: Array<{ at: string; by: string | null; transition: string; comment: string | null }> }>>(`/review/${id}`)).data,
+  approve: async (id: string, comment?: string) =>
+    (await api.post<ApiEnvelope<{ id: string; status: string; reviewedBy: string; reviewedAt: string; comment: string | null }>>(`/review/${id}/approve`, { comment })).data,
+  reject: async (id: string, comment?: string) =>
+    (await api.post<ApiEnvelope<{ id: string; status: string; reviewedBy: string; reviewedAt: string; comment: string | null }>>(`/review/${id}/reject`, { comment })).data,
+  escalate: async (id: string, comment?: string) =>
+    (await api.post<ApiEnvelope<{ id: string; status: string; reviewedBy: string; reviewedAt: string; comment: string | null }>>(`/review/${id}/escalate`, { comment })).data,
+};
+
+export const whatsappIntakeApi = {
+  sendMessage: async (data: { from: string; message: string }) =>
+    (await api.post<ApiEnvelope<{ accepted: boolean; recordId: string; classification: { section: string; principles: number[]; confidence: number; evidenceKinds: string[] } }>>('/whatsapp-intake/message', data)).data,
+  sendEvidence: async (data: { from: string; message: string; module_id?: string }) =>
+    (await api.post<ApiEnvelope<{ accepted: boolean; recordId: string; title: string; classification: { section: string; principles: number[]; confidence: number; evidenceKinds: string[] } }>>('/whatsapp-intake/evidence', data)).data,
+};
+
 export const dashboardApi = {
   getOverview: async (): Promise<DashboardOverview> => {
     const [healthResult, modulesResult, templatesResult, workflowRulesResult, recordsResult] = await Promise.allSettled([

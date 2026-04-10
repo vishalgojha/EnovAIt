@@ -15,100 +15,51 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BlockGuide } from '@/components/layout/BlockGuide';
 import { Progress } from '@/components/ui/progress';
-import { adminApi, dataApi } from '@/lib/api/endpoints';
-
-const sectionLabels: Record<string, string> = {
-  section_a_general_disclosures: 'Section A',
-  section_b_management_process: 'Section B',
-  section_c_principle_wise_performance: 'Section C',
-};
-
-const inferCoverage = (recordType: string, data: Record<string, unknown>) => {
-  const text = JSON.stringify({ recordType, ...data }).toLowerCase();
-
-  const hasGeneralDisclosures = text.includes('section a') || text.includes('general') || text.includes('corporate') || text.includes('entity');
-  const hasManagementDisclosures = text.includes('policy') || text.includes('governance') || text.includes('board');
-  const hasPrincipleEvidence = text.includes('principle') || text.includes('value chain') || text.includes('assurance') || text.includes('indicator');
-
-  return {
-    section_a_general_disclosures: hasGeneralDisclosures,
-    section_b_management_process: hasManagementDisclosures,
-    section_c_principle_wise_performance: hasPrincipleEvidence,
-  };
-};
+import { brsrReadinessApi, dataApi } from '@/lib/api/endpoints';
 
 export function BRSRReadinessPage() {
   const navigate = useNavigate();
 
-  const { data: modules = [] } = useQuery({
-    queryKey: ['admin-modules'],
-    queryFn: adminApi.getModules,
+  const { data: readiness, isLoading: readinessLoading } = useQuery({
+    queryKey: ['brsr-readiness'],
+    queryFn: brsrReadinessApi.getReadiness,
   });
 
-  const { data: records = [], isLoading } = useQuery({
+  const { data: sectionDetails } = useQuery({
+    queryKey: ['brsr-sections'],
+    queryFn: brsrReadinessApi.getSectionDetail,
+  });
+
+  const { data: principleDetails } = useQuery({
+    queryKey: ['brsr-principles'],
+    queryFn: brsrReadinessApi.getPrincipleDetail,
+  });
+
+  const { data: gaps } = useQuery({
+    queryKey: ['brsr-gaps'],
+    queryFn: brsrReadinessApi.getGaps,
+  });
+
+  const { data: records = [] } = useQuery({
     queryKey: ['data-records'],
     queryFn: () => dataApi.getRecords({ limit: 200, offset: 0 }).then((result) => result.data),
   });
 
-  const brsrModule = useMemo(
-    () =>
-      modules.find((module) => module.code === 'brsr_india') ||
-      modules.find((module) => module.name.toLowerCase().includes('brsr')) ||
-      modules[0],
-    [modules]
-  );
-
   const brsrRecords = useMemo(
     () =>
-      records.filter((record) => {
-        if (!brsrModule) {
-          return false;
-        }
-        return record.module_id === brsrModule.id || record.record_type.startsWith('brsr_');
-      }),
-    [brsrModule, records]
+      records.filter((record) =>
+        record.record_type.startsWith('brsr_') || record.record_type.includes('brsr')
+      ),
+    [records]
   );
 
-  const readiness = useMemo(() => {
-    const requiredSections = [
-      'section_a_general_disclosures',
-      'section_b_management_process',
-      'section_c_principle_wise_performance',
-    ];
+  const isLoading = readinessLoading;
 
-    const coverage = requiredSections.reduce<Record<string, boolean>>((accumulator, section) => {
-      accumulator[section] = false;
-      return accumulator;
-    }, {});
-
-    const evidenceKinds = new Set<string>();
-
-    for (const record of brsrRecords) {
-      const recordData = (record.data ?? {}) as Record<string, unknown>;
-      const inferred = inferCoverage(record.record_type, recordData);
-
-      for (const [section, covered] of Object.entries(inferred)) {
-        coverage[section] = coverage[section] || covered;
-      }
-
-      const kind = typeof recordData.kind === 'string' ? recordData.kind : null;
-      if (kind) {
-        evidenceKinds.add(kind);
-      }
-    }
-
-    const coveredSections = requiredSections.filter((section) => coverage[section]).length;
-    const score = Math.round((coveredSections / requiredSections.length) * 100);
-
-    const gaps = requiredSections.filter((section) => !coverage[section]);
-
-    return {
-      score,
-      coverage,
-      gaps,
-      evidenceKinds: [...evidenceKinds],
-    };
-  }, [brsrRecords]);
+  const sectionLabels: Record<string, string> = {
+    section_a: 'Section A: General Disclosures',
+    section_b: 'Section B: Management Process',
+    section_c: 'Section C: Principle-wise Performance',
+  };
 
   const latestEvidence = useMemo(
     () =>
@@ -118,20 +69,28 @@ export function BRSRReadinessPage() {
     [brsrRecords]
   );
 
-  const nextActions = [
-    {
-      title: 'Upload BRSR general disclosures',
-      description: 'Add PDF board packs, annual report extracts, or policy statements for Section A.',
-    },
-    {
-      title: 'Ingest governance evidence',
-      description: 'Bring in policy spreadsheets or management summaries for Section B.',
-    },
-    {
-      title: 'Attach principle-wise documents',
-      description: 'Upload spreadsheets and PDFs for principle indicators, assurance, and value-chain coverage.',
-    },
-  ];
+  const nextActions = useMemo(() => {
+    if (gaps?.recommendedActions?.length) {
+      return gaps.recommendedActions.slice(0, 3).map((action) => ({
+        title: action,
+        description: '',
+      }));
+    }
+    return [
+      {
+        title: 'Upload BRSR general disclosures',
+        description: 'Add PDF board packs, annual report extracts, or policy statements for Section A.',
+      },
+      {
+        title: 'Ingest governance evidence',
+        description: 'Bring in policy spreadsheets or management summaries for Section B.',
+      },
+      {
+        title: 'Attach principle-wise documents',
+        description: 'Upload spreadsheets and PDFs for principle indicators, assurance, and value-chain coverage.',
+      },
+    ];
+  }, [gaps]);
 
   return (
     <div className="space-y-6">
@@ -166,12 +125,12 @@ export function BRSRReadinessPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:w-[390px]">
               <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Readiness score</p>
-                <p className="mt-2 text-3xl font-semibold">{readiness.score}%</p>
+                <p className="mt-2 text-3xl font-semibold">{readiness?.overallScore ?? 0}%</p>
                 <p className="mt-1 text-xs text-muted-foreground">Based on live ingested evidence</p>
               </div>
               <div className="rounded-[1.5rem] bg-white px-4 py-4 shadow-sm">
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Evidence packs</p>
-                <p className="mt-2 text-3xl font-semibold">{brsrRecords.length}</p>
+                <p className="mt-2 text-3xl font-semibold">{readiness?.totalRecords ?? 0}</p>
                 <p className="mt-1 text-xs text-muted-foreground">Created by file upload</p>
               </div>
             </div>
@@ -188,27 +147,27 @@ export function BRSRReadinessPage() {
               </div>
 
               <div className="mt-5 space-y-4">
-                {Object.entries(sectionLabels).map(([sectionKey, label]) => {
-                  const covered = readiness.coverage[sectionKey];
-                  return (
-                    <div key={sectionKey} className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
-                      <div className="flex items-center justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-medium">{label}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {sectionKey === 'section_a_general_disclosures' && 'Listed entity details, operations, and material issues'}
-                            {sectionKey === 'section_b_management_process' && 'Policies, board oversight, and management disclosures'}
-                            {sectionKey === 'section_c_principle_wise_performance' && 'Principle-wise performance, indicators, and assurance'}
-                          </p>
-                        </div>
-                        <Badge variant={covered ? 'default' : 'secondary'} className="rounded-full">
-                          {covered ? 'Covered' : 'Missing'}
-                        </Badge>
+                {(sectionDetails ?? []).map((section) => (
+                  <div key={section.section} className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium">{section.label}</p>
+                        <p className="text-xs text-muted-foreground">{section.description}</p>
                       </div>
-                      <Progress value={covered ? 100 : 18} className="mt-4" />
+                      <Badge variant={section.covered ? 'default' : 'secondary'} className="rounded-full">
+                        {section.covered ? 'Covered' : 'Missing'}
+                      </Badge>
                     </div>
-                  );
-                })}
+                    <Progress value={section.coveragePercent} className="mt-4" />
+                    {section.evidenceKinds.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-1.5">
+                        {section.evidenceKinds.map((kind) => (
+                          <Badge key={kind} variant="outline" className="rounded-full text-[10px] capitalize">{kind}</Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
 
@@ -225,19 +184,19 @@ export function BRSRReadinessPage() {
                 </div>
 
                 <div className="mt-4 space-y-3">
-                  {readiness.gaps.length === 0 ? (
+                  {(gaps?.totalGaps ?? 0) === 0 ? (
                     <div className="flex items-center gap-2 rounded-2xl bg-emerald-50 px-3 py-3 text-sm text-emerald-900">
                       <CheckCircle2 className="h-4 w-4" />
                       All core BRSR sections have evidence coverage.
                     </div>
                   ) : (
-                    readiness.gaps.map((gap) => (
-                      <div key={gap} className="flex items-center justify-between rounded-2xl bg-muted/35 px-3 py-3">
+                    (gaps?.gaps ?? [])
+                      .filter((g) => g.type === 'section')
+                      .map((gap) => (
+                      <div key={gap.section} className="flex items-center justify-between rounded-2xl bg-muted/35 px-3 py-3">
                         <div>
-                          <p className="text-sm font-medium">{sectionLabels[gap]}</p>
-                          <p className="text-xs text-muted-foreground">
-                            Upload live evidence to cover this section.
-                          </p>
+                          <p className="text-sm font-medium">{gap.label}</p>
+                          <p className="text-xs text-muted-foreground">{gap.recommendedAction}</p>
                         </div>
                         <FileUp className="h-4 w-4 text-muted-foreground" />
                       </div>
@@ -250,18 +209,59 @@ export function BRSRReadinessPage() {
                 <p className="text-sm font-semibold">Evidence types detected</p>
                 <p className="mt-1 text-xs text-muted-foreground">Only based on what users have uploaded.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  {readiness.evidenceKinds.length === 0 ? (
+                  {(readiness?.sourceChannels?.length ?? 0) === 0 ? (
                     <Badge variant="secondary" className="rounded-full">No uploads yet</Badge>
                   ) : (
-                    readiness.evidenceKinds.map((kind) => (
-                      <Badge key={kind} variant="secondary" className="rounded-full capitalize">
-                        {kind}
+                    readiness?.sourceChannels?.map((channel) => (
+                      <Badge key={channel} variant="secondary" className="rounded-full capitalize">
+                        {channel}
                       </Badge>
                     ))
                   )}
                 </div>
               </div>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Principle-wise coverage */}
+      <Card className="rounded-[1.7rem] border-white/70 bg-white/85 shadow-none">
+        <CardHeader>
+          <CardTitle>Principle-wise coverage</CardTitle>
+          <CardDescription>Track evidence for each of the 9 BRSR principles.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {(principleDetails ?? []).map((p) => (
+              <div key={p.principle} className="rounded-2xl border border-border/70 bg-muted/30 px-4 py-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{p.title}</p>
+                    <p className="mt-1 text-xs text-muted-foreground">{p.description}</p>
+                  </div>
+                  <Badge variant={p.evidenceCount > 0 ? 'default' : 'secondary'} className="rounded-full shrink-0">
+                    {p.evidenceCount > 0 ? `${p.evidenceCount}` : '—'}
+                  </Badge>
+                </div>
+                <Progress value={p.coveragePercent} className="mt-3" />
+                {p.totalEssentialIndicators > 0 && (
+                  <p className="mt-2 text-[10px] text-muted-foreground">
+                    {p.essentialIndicators}/{p.totalEssentialIndicators} essential, {p.leadershipIndicators}/{p.totalLeadershipIndicators} leadership
+                  </p>
+                )}
+                {p.indicatorsExtracted.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {p.indicatorsExtracted.slice(0, 4).map((ind) => (
+                      <Badge key={ind} variant="outline" className="rounded-full text-[9px]">{ind.replace(/_/g, ' ')}</Badge>
+                    ))}
+                    {p.indicatorsExtracted.length > 4 && (
+                      <Badge variant="outline" className="rounded-full text-[9px]">+{p.indicatorsExtracted.length - 4} more</Badge>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </CardContent>
       </Card>

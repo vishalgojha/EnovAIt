@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { AppError } from "../../lib/errors.js";
+import { brsrExtractionService } from "../extraction/brsrExtractionService.js";
 import { workflowEngine } from "../workflow/workflowEngine.js";
 
 type WhatsAppProvider = "official" | "baileys" | "generic";
@@ -326,6 +327,27 @@ export const whatsappIngestionService = {
         actorUserId: null,
         triggerEvent: "record.completed"
       });
+
+      // Run BRSR AI classification on WhatsApp text content
+      const messageText = message.text || message.caption || "";
+      if (messageText && messageText.length > 10) {
+        const { data: moduleData } = await supabaseAdmin
+          .from("modules")
+          .select("code")
+          .eq("id", moduleId)
+          .single();
+
+        if (moduleData && (moduleData.code === "brsr" || moduleData.code === "esg")) {
+          await brsrExtractionService.processIngestedDocument(
+            supabaseAdmin,
+            { orgId: integration.org_id, userId: integration.org_id, role: "system", email: "whatsapp@enovait.local" },
+            moduleId,
+            messageText,
+            `whatsapp_${message.from || message.message_id}`,
+            record.id
+          );
+        }
+      }
 
       recordIds.push(record.id);
       eventIds.push(event.id);
