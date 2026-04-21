@@ -1,11 +1,9 @@
 import { randomUUID } from "node:crypto";
 
-import { createClient } from "@supabase/supabase-js";
 import type { Request, Response } from "express";
 
-import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
-import { createUserSupabaseClient, supabaseAdmin } from "../../lib/supabase.js";
+import { createAnonSupabaseClient, createUserSupabaseClient, supabaseAdmin } from "../../lib/supabase.js";
 import { isReservedSuperAdminEmail } from "../../lib/superAdminBootstrap.js";
 import { SignInSchema, SignUpSchema } from "../schemas/authSchemas.js";
 
@@ -18,14 +16,6 @@ const slugify = (value: string): string => {
 
   return normalized || "org";
 };
-
-const createAnonAuthClient = () =>
-  createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  });
 
 const resolveUniqueOrgSlug = async (baseName: string): Promise<string> => {
   const baseSlug = slugify(baseName);
@@ -66,10 +56,15 @@ const fetchAuthProfile = async (accessToken: string) => {
     .from("users")
     .select("id, email, full_name, role, org_id")
     .eq("id", authUserId)
-    .single();
+    .maybeSingle();
 
-  if (userError || !appUser) {
-    throw new AppError("No application user mapping found", 403, "USER_NOT_MAPPED", userError ?? undefined);
+  if (!appUser) {
+    throw new AppError(
+      "No application user mapping found. Please contact support to restore your account.",
+      403,
+      "USER_NOT_MAPPED",
+      userError ?? undefined
+    );
   }
 
   const { data: org, error: orgError } = await supabaseAdmin
@@ -153,7 +148,7 @@ export const authController = {
       throw new AppError("Failed to create application user mapping", 500, "DB_WRITE_FAILED", userMapError);
     }
 
-    const anonAuthClient = createAnonAuthClient();
+    const anonAuthClient = createAnonSupabaseClient();
     const { data: sessionData, error: signInError } = await anonAuthClient.auth.signInWithPassword({
       email: payload.email,
       password: payload.password
@@ -176,7 +171,7 @@ export const authController = {
 
   async signIn(req: Request, res: Response) {
     const payload = SignInSchema.parse(req.body);
-    const anonAuthClient = createAnonAuthClient();
+    const anonAuthClient = createAnonSupabaseClient();
 
     const { data: sessionData, error: signInError } = await anonAuthClient.auth.signInWithPassword({
       email: payload.email,
@@ -188,13 +183,23 @@ export const authController = {
       throw new AppError("Invalid credentials", 401, "AUTH_INVALID_CREDENTIALS", signInError);
     }
 
-    const profile = await fetchAuthProfile(accessToken);
-
-    res.status(200).json({
-      data: {
-        token: accessToken,
-        ...profile
+    try {
+      const profile = await fetchAuthProfile(accessToken);
+      res.status(200).json({
+        data: {
+          token: accessToken,
+          ...profile
+        }
+      });
+    } catch (error) {
+      if (error instanceof AppError && error.code === "USER_NOT_MAPPED") {
+        throw new AppError(
+          "Your account exists but its workspace mapping is missing. This can happen if signup was interrupted. Please contact support to restore your account.",
+          403,
+          "ACCOUNT_RECOVERY_NEEDED"
+        );
       }
-    });
+      throw error;
+    }
   }
 };
