@@ -25,8 +25,9 @@ export const tenantAwareLimiter = rateLimit({
   windowMs: env.RATE_LIMIT_WINDOW_MS,
   max: (req) => {
     const orgId = req.auth?.orgId;
-    if (orgId && orgId in tenantRateLimitOverrides) {
-      return tenantRateLimitOverrides[orgId];
+    const overrides = tenantRateLimitOverrides();
+    if (orgId && orgId in overrides) {
+      return overrides[orgId];
     }
     return env.RATE_LIMIT_TENANT_DEFAULT_MAX;
   },
