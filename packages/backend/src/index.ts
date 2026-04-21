@@ -1,11 +1,16 @@
 import { app } from "./app.js";
 import { env } from "./config.js";
 import { logger } from "./lib/logger.js";
-import { bootstrapSuperAdmins } from "./lib/superAdminBootstrap.js";
 import { startWorkers, stopWorkers } from "./workers/index.js";
+import { selfHeal } from "./services/selfHeal.js";
 
 const start = async (): Promise<void> => {
-  await bootstrapSuperAdmins();
+  // Self-heal: run diagnostics and fixes before starting
+  try {
+    await selfHeal();
+  } catch (err) {
+    logger.warn({ err }, "Self-heal encountered issues — starting anyway");
+  }
 
   const server = app.listen(env.PORT, () => {
     logger.info({ port: env.PORT, env: env.NODE_ENV }, "EnovAIt backend started");
