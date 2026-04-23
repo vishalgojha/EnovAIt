@@ -1,75 +1,39 @@
-import { useState } from "react";
-import { ExternalLink, Package, Cpu, Leaf, Scale, Users2, ShieldCheck, Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useMemo, useState } from "react";
+import { Search, Shield, Users, UserCheck, KeyRound, Crown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { getRolePermissions, hasPermission, permissions, roleCatalog } from "@/lib/rbac";
+import { useAuthStore } from "@/lib/store/auth";
 
-const modules = [
-  {
-    id: "brsr",
-    title: "BRSR Core",
-    description: "SEBI-mandated disclosures with structured evidence and review checks.",
-    icon: ShieldCheck,
-    status: "Active",
-    category: "Compliance",
-    tone: "emerald",
-  },
-  {
-    id: "workbench",
-    title: "ESG Workbench",
-    description: "Centralize emissions, policies, and narrative inputs across entities.",
-    icon: Package,
-    status: "Active",
-    category: "Strategic",
-    tone: "blue",
-  },
-  {
-    id: "carbon",
-    title: "Carbon Accounting",
-    description: "Scope 1, 2, and 3 data capture with validation and trend tracking.",
-    icon: Leaf,
-    status: "Active",
-    category: "Environment",
-    tone: "green",
-  },
-  {
-    id: "value-chain",
-    title: "Value Chain ESG",
-    description: "Vendor and supplier intake for supply chain sustainability work.",
-    icon: Cpu,
-    status: "Setup Required",
-    category: "Operational",
-    tone: "amber",
-  },
-  {
-    id: "governance",
-    title: "Corporate Governance",
-    description: "Board composition, policy evidence, and control tracking.",
-    icon: Scale,
-    status: "Active",
-    category: "Governance",
-    tone: "violet",
-  },
-  {
-    id: "people",
-    title: "Diversity & Inclusion",
-    description: "Workforce and social metrics with role-based review workflows.",
-    icon: Users2,
-    status: "Active",
-    category: "Social",
-    tone: "pink",
-  },
-];
+const iconByRole = {
+  super_admin: Crown,
+  owner: Shield,
+  admin: KeyRound,
+  manager: Users,
+  member: UserCheck,
+  viewer: Shield,
+  ceo: Crown,
+  c_env_officer: Shield,
+  project_ops: Users,
+  hr: Users,
+  finance: KeyRound,
+  accounts_exec: KeyRound,
+} as const;
 
-export default function ModulesPage() {
+export default function RolesPage() {
   const [query, setQuery] = useState("");
+  const user = useAuthStore((state) => state.user);
+  const canEdit = hasPermission(user?.role, permissions.rbacManage);
 
-  const visibleModules = modules.filter((module) =>
-    `${module.title} ${module.description} ${module.category}`
-      .toLowerCase()
-      .includes(query.toLowerCase())
+  const visibleRoles = useMemo(
+    () =>
+      roleCatalog.filter((role) =>
+        `${role.label} ${role.summary} ${role.scope}`.toLowerCase().includes(query.toLowerCase())
+      ),
+    [query]
   );
 
   return (
@@ -77,71 +41,100 @@ export default function ModulesPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            Modules
+            Access control
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Active capabilities
+            Roles and permission scopes
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            A modular workspace for each part of the ESG operating model.
+            Review the built-in role ladder, the default scope for each role, and how much of the
+            workspace each role can reach.
           </p>
         </div>
-        <div className="relative w-full max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Filter modules..."
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            className="h-11 border-white/10 bg-white/70 pl-10 shadow-sm"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative w-full max-w-sm">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Filter roles..."
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              className="h-11 border-white/10 bg-white/70 pl-10 shadow-sm"
+            />
+          </div>
+          <Button className="h-11 rounded-full bg-[#101513] px-5 text-white hover:bg-[#101513]/90" disabled={!canEdit}>
+            Create role
+          </Button>
         </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {visibleModules.map((module) => (
-          <Card key={module.id} className="border-white/60 bg-white/80 shadow-sm">
-            <CardHeader className="border-b border-border/60">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex min-w-0 items-start gap-3">
-                  <div
+        {visibleRoles.map((role) => {
+          const Icon = iconByRole[role.role];
+          const permissionsForRole = getRolePermissions(role.role);
+          const isPrivileged = permissionsForRole.includes(permissions.rbacManage);
+
+          return (
+            <Card key={role.role} className="border-white/60 bg-white/80 shadow-sm">
+              <CardHeader className="border-b border-border/60">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={cn(
+                        "flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm",
+                        role.role === "super_admin" || role.role === "owner"
+                          ? "bg-[#101513]"
+                          : role.role === "admin"
+                            ? "bg-emerald-700"
+                            : role.role === "manager"
+                              ? "bg-lime-700"
+                              : "bg-stone-700"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-lg tracking-tight">{role.label}</CardTitle>
+                      <CardDescription className="mt-1 text-sm leading-6">
+                        {role.summary}
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <Badge
+                    variant="outline"
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-2xl text-white shadow-sm",
-                      module.tone === "emerald" && "bg-emerald-600",
-                      module.tone === "blue" && "bg-blue-600",
-                      module.tone === "green" && "bg-[#4A6741]",
-                      module.tone === "amber" && "bg-amber-500",
-                      module.tone === "violet" && "bg-violet-600",
-                      module.tone === "pink" && "bg-pink-600"
+                      "rounded-full text-[10px] uppercase tracking-[0.2em]",
+                      isPrivileged
+                        ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                        : "border-border/60 bg-muted/50 text-muted-foreground"
                     )}
                   >
-                    <module.icon className="h-5 w-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <CardTitle className="text-lg tracking-tight">{module.title}</CardTitle>
-                    <CardDescription className="mt-1 text-sm leading-6">
-                      {module.description}
-                    </CardDescription>
-                  </div>
+                    {role.scope}
+                  </Badge>
                 </div>
-                <Badge variant="outline" className="rounded-full bg-muted/50 text-[10px] uppercase tracking-[0.2em]">
-                  {module.status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4 p-5">
-              <Badge className="rounded-full border border-primary/15 bg-primary/5 text-[10px] uppercase tracking-[0.2em] text-primary hover:bg-primary/5">
-                {module.category}
-              </Badge>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Configured for live intake</span>
-                <Button variant="ghost" size="sm" className="rounded-full px-3 text-primary">
-                  Open
-                  <ExternalLink className="ml-2 h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardHeader>
+              <CardContent className="space-y-4 p-5">
+                <div className="flex flex-wrap gap-2">
+                  {permissionsForRole.map((permission) => (
+                    <Badge
+                      key={permission}
+                      className="rounded-full border border-primary/15 bg-primary/5 text-[10px] uppercase tracking-[0.2em] text-primary hover:bg-primary/5"
+                    >
+                      {permission}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">
+                    Role tier: {isPrivileged ? "Privileged" : "Standard"}
+                  </span>
+                  <Button variant="ghost" size="sm" className="rounded-full px-3 text-primary" disabled={!canEdit}>
+                    Edit
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

@@ -4,7 +4,7 @@ import { AppHeader } from "./AppHeader";
 
 export function AppShell() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top_left,rgba(74,103,65,0.08),transparent_30%),linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--background))_100%)] text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-[1800px] lg:grid lg:grid-cols-[280px_minmax(0,1fr)]">
         <AppSidebar />
         <div className="flex min-w-0 flex-1 flex-col">

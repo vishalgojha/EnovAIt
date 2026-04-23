@@ -1,11 +1,60 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/LoginPage";
 import LandingPage from "@/pages/Landing";
 import DashboardPage from "@/pages/Dashboard";
-import ModulesPage from "@/pages/Modules";
-import AIAssistant from "@/pages/AI";
-import ReadinessPage from "@/pages/Readiness";
+import RolesPage from "@/pages/Modules";
+import ApprovalsPage from "@/pages/Readiness";
+import AssistantPage from "@/pages/AI";
+import { useAuthStore } from "@/lib/store/auth";
+import { canAccessPath, permissions, type Permission } from "@/lib/rbac";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+
+function RequireAuth({ children }: { children: ReactNode }) {
+  const { user } = useAuthStore();
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
+}
+
+function RedirectWithPermission({
+  path,
+  element,
+}: {
+  path: string;
+  element: ReactNode;
+}) {
+  const { user } = useAuthStore();
+  const required = (path in routePermissions ? routePermissions[path] : undefined) as Permission | undefined;
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (required && !canAccessPath(user.role, path)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return <>{element}</>;
+}
+
+const routePermissions = {
+  "/dashboard": permissions.dashboard,
+  "/roles": permissions.rbacRead,
+  "/approvals": permissions.approvals,
+  "/audit": permissions.audit,
+  "/assistant": permissions.assistant,
+  "/data": permissions.data,
+  "/reports": permissions.reports,
+  "/workflows": permissions.workflows,
+  "/integrations": permissions.integrations,
+  "/settings": permissions.settings,
+} as const;
 
 function PlaceholderPage({
   title,
@@ -18,14 +67,12 @@ function PlaceholderPage({
     <div className="grid min-h-[55vh] place-items-center">
       <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-white/80 p-10 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
         <div className="mb-6 inline-flex rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-          Coming soon
+          RBAC workspace
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
         </h1>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">
-          {description}
-        </p>
+        <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>
       </div>
     </div>
   );
@@ -38,119 +85,117 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
 
-        <Route element={<AppShell />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/ai" element={<AIAssistant />} />
-          <Route path="/modules" element={<ModulesPage />} />
-          <Route path="/readiness" element={<ReadinessPage />} />
+        <Route
+          element={
+            <RequireAuth>
+              <AppShell />
+            </RequireAuth>
+          }
+        >
           <Route
-            path="/templates"
+            path="/dashboard"
+            element={<RedirectWithPermission path="/dashboard" element={<DashboardPage />} />}
+          />
+          <Route
+            path="/roles"
+            element={<RedirectWithPermission path="/roles" element={<RolesPage />} />}
+          />
+          <Route
+            path="/approvals"
+            element={<RedirectWithPermission path="/approvals" element={<ApprovalsPage />} />}
+          />
+          <Route
+            path="/audit"
             element={
-              <PlaceholderPage
-                title="Templates Library"
-                description="Reusable disclosure templates, checklists, and narrative blocks will live here."
+              <RedirectWithPermission
+                path="/audit"
+                element={
+                  <PlaceholderPage
+                    title="Audit Trail"
+                    description="Who approved what, when they approved it, and which permissions were touched."
+                  />
+                }
               />
             }
           />
           <Route
-            path="/workflows"
-            element={
-              <PlaceholderPage
-                title="Workflow Orchestration"
-                description="Approvals, escalations, and review routing will be surfaced in this section."
-              />
-            }
-          />
-          <Route
-            path="/review"
-            element={
-              <PlaceholderPage
-                title="Review Queue"
-                description="Exception handling and reviewer assignments will appear here."
-              />
-            }
+            path="/assistant"
+            element={<RedirectWithPermission path="/assistant" element={<AssistantPage />} />}
           />
           <Route
             path="/data"
             element={
-              <PlaceholderPage
-                title="Data Records"
-                description="Evidence records, source links, and ingestion history will be tracked here."
+              <RedirectWithPermission
+                path="/data"
+                element={
+                  <PlaceholderPage
+                    title="Data Access"
+                    description="Record-level visibility, evidence links, and scope filters will live here."
+                  />
+                }
               />
             }
           />
           <Route
             path="/reports"
             element={
-              <PlaceholderPage
-                title="Reports"
-                description="BRSR outputs, audit packets, and filing exports will be organized here."
+              <RedirectWithPermission
+                path="/reports"
+                element={
+                  <PlaceholderPage
+                    title="Reports"
+                    description="Leadership packs, role-scoped exports, and audit summaries will land here."
+                  />
+                }
               />
             }
           />
           <Route
-            path="/channels"
+            path="/workflows"
             element={
-              <PlaceholderPage
-                title="Channels"
-                description="WhatsApp, email, and system channels can be configured from here."
+              <RedirectWithPermission
+                path="/workflows"
+                element={
+                  <PlaceholderPage
+                    title="Workflow Rules"
+                    description="Approval chains, escalation paths, and exception handling are managed here."
+                  />
+                }
               />
             }
           />
           <Route
             path="/integrations"
             element={
-              <PlaceholderPage
-                title="Integrations"
-                description="ERP, messaging, and document integrations will plug into this control panel."
-              />
-            }
-          />
-          <Route
-            path="/whatsapp-setup"
-            element={
-              <PlaceholderPage
-                title="WhatsApp Setup"
-                description="Channel onboarding and API configuration will be surfaced here."
-              />
-            }
-          />
-          <Route
-            path="/email-templates"
-            element={
-              <PlaceholderPage
-                title="Email Templates"
-                description="Operational communication templates will be managed here."
+              <RedirectWithPermission
+                path="/integrations"
+                element={
+                  <PlaceholderPage
+                    title="Integrations"
+                    description="Connect identity, ERP, messaging, and storage systems behind role controls."
+                  />
+                }
               />
             }
           />
           <Route
             path="/settings"
             element={
-              <PlaceholderPage
-                title="Settings"
-                description="Workspace, profile, and platform preferences will be managed here."
+              <RedirectWithPermission
+                path="/settings"
+                element={
+                  <PlaceholderPage
+                    title="Settings"
+                    description="Tenant configuration, policy defaults, and security posture settings live here."
+                  />
+                }
               />
             }
           />
-          <Route
-            path="/platform"
-            element={
-              <PlaceholderPage
-                title="Platform Console"
-                description="Administrative tooling and system health controls will live here."
-              />
-            }
-          />
-          <Route
-            path="/secrets"
-            element={
-              <PlaceholderPage
-                title="Secrets Vault"
-                description="Sensitive environment and integration credentials will be secured here."
-              />
-            }
-          />
+
+          <Route path="/modules" element={<Navigate to="/roles" replace />} />
+          <Route path="/readiness" element={<Navigate to="/approvals" replace />} />
+          <Route path="/ai" element={<Navigate to="/assistant" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

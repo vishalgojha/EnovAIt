@@ -1,68 +1,61 @@
 import { NavLink } from "react-router-dom";
 import {
   BarChart3,
-  ClipboardList,
+  Clock3,
   Database,
-  FileText,
-  Key,
+  FileLock2,
+  KeyRound,
   LayoutDashboard,
-  Mail,
-  MessageSquare,
-  Package,
-  Plug,
-  Settings,
-  ShieldAlert,
-  Share2,
+  MonitorCog,
+  MessagesSquare,
+  Shield,
+  Users,
   Workflow,
-  Zap,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { hasPermission, permissions, getRoleLabel, getRoleSummary } from "@/lib/rbac";
+import { useAuthStore } from "@/lib/store/auth";
 
 const sections = [
   {
     label: "Overview",
     items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { label: "AI Assistant", href: "/ai", icon: MessageSquare },
-      { label: "Readiness", href: "/readiness", icon: ShieldAlert },
+      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: permissions.dashboard },
+      { label: "Roles", href: "/roles", icon: Users, permission: permissions.rbacRead },
+      { label: "Approvals", href: "/approvals", icon: Clock3, permission: permissions.approvals },
+      { label: "Audit", href: "/audit", icon: FileLock2, permission: permissions.audit },
     ],
   },
   {
-    label: "Governance",
+    label: "Operations",
     items: [
-      { label: "Modules", href: "/modules", icon: Package },
-      { label: "Templates", href: "/templates", icon: FileText },
-      { label: "Workflows", href: "/workflows", icon: Workflow },
-      { label: "Review Queue", href: "/review", icon: ClipboardList },
+      { label: "Assistant", href: "/assistant", icon: MessagesSquare, permission: permissions.assistant },
+      { label: "Data", href: "/data", icon: Database, permission: permissions.data },
+      { label: "Reports", href: "/reports", icon: BarChart3, permission: permissions.reports },
+      { label: "Workflows", href: "/workflows", icon: Workflow, permission: permissions.workflows },
     ],
   },
   {
-    label: "Data & Reporting",
+    label: "Administration",
     items: [
-      { label: "Records", href: "/data", icon: Database },
-      { label: "Reports", href: "/reports", icon: BarChart3 },
-      { label: "Channels", href: "/channels", icon: Share2 },
-    ],
-  },
-  {
-    label: "Connectivity",
-    items: [
-      { label: "Integrations", href: "/integrations", icon: Plug },
-      { label: "WhatsApp Setup", href: "/whatsapp-setup", icon: Zap },
-      { label: "Email Templates", href: "/email-templates", icon: Mail },
-    ],
-  },
-  {
-    label: "Platform",
-    items: [
-      { label: "Console", href: "/platform", icon: Settings },
-      { label: "Secrets", href: "/secrets", icon: Key },
+      { label: "Integrations", href: "/integrations", icon: MonitorCog, permission: permissions.integrations },
+      { label: "Settings", href: "/settings", icon: KeyRound, permission: permissions.settings },
     ],
   },
 ];
 
 export function AppSidebar() {
+  const user = useAuthStore((state) => state.user);
+  const tenant = useAuthStore((state) => state.tenant);
+
+  const visibleSections = sections
+    .map((section) => ({
+      ...section,
+      items: section.items.filter((item) => hasPermission(user?.role, item.permission)),
+    }))
+    .filter((section) => section.items.length > 0);
+
   return (
     <aside className="hidden border-r border-white/10 bg-[#101513] text-white lg:flex lg:min-h-screen lg:flex-col">
       <div className="border-b border-white/10 px-6 py-6">
@@ -73,7 +66,7 @@ export function AppSidebar() {
           <div>
             <p className="text-sm font-semibold tracking-tight">EnovAIt</p>
             <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">
-              ESG intelligence layer
+              RBAC control plane
             </p>
           </div>
         </div>
@@ -81,7 +74,7 @@ export function AppSidebar() {
 
       <div className="flex-1 overflow-y-auto px-4 py-5">
         <div className="space-y-6">
-          {sections.map((section) => (
+          {visibleSections.map((section) => (
             <div key={section.label}>
               <div className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-white/35">
                 {section.label}
@@ -115,18 +108,22 @@ export function AppSidebar() {
           <div className="flex items-center gap-3">
             <Avatar className="h-9 w-9">
               <AvatarFallback className="bg-[#4A6741] text-white">
-                AU
+                {(user?.name?.[0] ?? "U").toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-white">
-                Admin Workspace
-              </p>
-              <p className="truncate text-[11px] text-white/45">
-                admin@enov360.com
-              </p>
+              <p className="truncate text-sm font-medium text-white">{user?.name ?? "Guest"}</p>
+              <p className="truncate text-[11px] text-white/45">{user?.email ?? "Not signed in"}</p>
             </div>
           </div>
+          <div className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2">
+            <p className="text-[10px] uppercase tracking-[0.22em] text-white/40">Role</p>
+            <p className="mt-1 text-sm font-medium text-white">{getRoleLabel(user?.role)}</p>
+            <p className="mt-1 text-[11px] leading-5 text-white/55">{getRoleSummary(user?.role)}</p>
+          </div>
+          <p className="mt-3 text-[10px] uppercase tracking-[0.22em] text-white/35">
+            {tenant?.name ?? "No tenant selected"}
+          </p>
         </div>
       </div>
     </aside>

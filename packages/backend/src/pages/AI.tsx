@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Bot, Send, Sparkles, User } from "lucide-react";
+import { Bot, Send, ShieldCheck, Sparkles, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,35 +11,35 @@ type Message = {
 };
 
 const suggestions = [
-  "Summarize the latest readiness gaps.",
-  "What evidence is missing for BRSR Core?",
-  "Draft a narrative for water consumption variance.",
+  "Who can approve a new admin role?",
+  "Summarize the current access risk posture.",
+  "What should I review before granting viewer access?",
 ];
 
 function generateReply(prompt: string) {
   const lower = prompt.toLowerCase();
 
-  if (lower.includes("water")) {
-    return "Water variance is flagged in one facility. I would request meter validation, source notes, and a short reviewer explanation before sign-off.";
+  if (lower.includes("admin")) {
+    return "Admin access should require an owner or super admin approval, a clear business reason, and an audit trail entry before activation.";
   }
 
-  if (lower.includes("brsr") || lower.includes("readiness")) {
-    return "Current readiness is strong, but the highest-value follow-up is closing the remaining emissions and energy evidence gaps.";
+  if (lower.includes("viewer")) {
+    return "Viewer access is lowest risk, but it should still be time-bound when it is tied to project work or external review.";
   }
 
-  if (lower.includes("narrative")) {
-    return "Use a concise structure: what changed, why it changed, how it was verified, and what action is already in flight.";
+  if (lower.includes("risk")) {
+    return "The biggest RBAC risk is privilege drift. Review stale admin accounts, missing approvers, and roles that grew beyond their original scope.";
   }
 
-  return "I can help turn the current workspace data into a clear summary, reviewer note, or filing narrative.";
+  return "I can help draft role requests, explain approval rules, and summarize who can see which part of the workspace.";
 }
 
-export default function AIAssistant() {
+export default function AssistantPage() {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
       content:
-        "I am the EnovAIt workspace assistant. Ask for a summary, a narrative draft, or a readiness check.",
+        "I am the RBAC assistant. Ask me about roles, approvals, scope limits, or access reviews.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -51,17 +51,16 @@ export default function AIAssistant() {
 
   const send = (value: string) => {
     const trimmed = value.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      return;
+    }
 
     setMessages((current) => [...current, { role: "user", content: trimmed }]);
     setInput("");
 
     window.setTimeout(() => {
-      setMessages((current) => [
-        ...current,
-        { role: "assistant", content: generateReply(trimmed) },
-      ]);
-    }, 350);
+      setMessages((current) => [...current, { role: "assistant", content: generateReply(trimmed) }]);
+    }, 300);
   };
 
   return (
@@ -69,13 +68,14 @@ export default function AIAssistant() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            AI assistant
+            Access assistant
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Workspace copiloting
+            Ask about roles, approvals, and scopes
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            A lightweight, live chat surface for drafting summaries and surfacing the next best action.
+            Use this surface to draft access requests, explain why a role is blocked, or summarize
+            the current permission model.
           </p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
@@ -88,7 +88,7 @@ export default function AIAssistant() {
         <CardHeader className="border-b border-border/60">
           <CardTitle className="text-xl tracking-tight">Conversation</CardTitle>
           <CardDescription>
-            Ask for a summary, a gap analysis, or a drafting prompt.
+            Ask for approval guidance, a risk summary, or a role explanation.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 p-5">
@@ -148,7 +148,7 @@ export default function AIAssistant() {
                   send(input);
                 }
               }}
-              placeholder="Ask about evidence, narratives, or readiness..."
+              placeholder="Ask about role scope, approvals, or access risk..."
               className="h-12 rounded-full border-white/10 bg-white/80 pl-4 pr-28 shadow-sm"
             />
             <Button
@@ -161,6 +161,21 @@ export default function AIAssistant() {
           </div>
         </CardContent>
       </Card>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        {[
+          "Owner approvals for privileged changes",
+          "Manager review for scoped requests",
+          "Viewer access for audit-only stakeholders",
+        ].map((item) => (
+          <Card key={item} className="border-white/60 bg-white/80 shadow-sm">
+            <CardContent className="flex items-center gap-3 p-5">
+              <ShieldCheck className="h-4 w-4 text-[#4A6741]" />
+              <p className="text-sm leading-6 text-muted-foreground">{item}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

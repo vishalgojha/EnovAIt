@@ -1,18 +1,20 @@
-import React from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAuthStore } from '@/lib/store/auth';
-import { toast } from 'sonner';
+import React from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import { useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuthStore } from "@/lib/store/auth";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
+import { roleCatalog, getRoleLabel } from "@/lib/rbac";
 
 const loginSchema = z.object({
-  email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
 });
 
 type LoginFormValues = z.infer<typeof loginSchema>;
@@ -20,88 +22,164 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  
+  const [selectedRole, setSelectedRole] = React.useState(roleCatalog[1].role);
+
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'admin@enovait.com',
-      password: 'password123',
-    }
+      email: "owner@enovait.com",
+      password: "password123",
+    },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Mock login delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Mock successful auth
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
+      const selected = roleCatalog.find((entry) => entry.role === selectedRole) ?? roleCatalog[1];
+
       setAuth(
-        { id: 'u1', email: data.email, name: 'Admin User', role: 'owner' },
-        { 
-          id: 't1', 
-          name: 'EnovAIt Global', 
-          slug: 'enovait-global', 
-          settings: { theme: 'light' } 
+        {
+          id: "u1",
+          email: data.email,
+          name: getRoleLabel(selected.role),
+          role: selected.role,
         },
-        'mock-jwt-token'
+        {
+          id: "t1",
+          name: "EnovAIt Control Tenant",
+          slug: "enovait-control",
+          settings: { theme: "light", rbac: true },
+        },
+        "mock-jwt-token"
       );
-      
-      toast.success('Successfully logged in!');
-      navigate('/dashboard');
-    } catch (error) {
-      toast.error('Failed to login. Please check your credentials.');
+
+      toast.success("Signed in with RBAC scope");
+      navigate("/dashboard");
+    } catch (_error) {
+      toast.error("Failed to login. Please check your credentials.");
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground font-bold text-2xl">
-              E
-            </div>
-          </div>
-          <CardTitle className="text-2xl">Welcome to EnovAIt</CardTitle>
-          <CardDescription>
-            Enter your credentials to access your control panel
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input 
-                id="email" 
-                type="email" 
-                placeholder="name@example.com" 
-                {...register('email')}
-                className={errors.email ? 'border-destructive' : ''}
-              />
-              {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
-            </div>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label htmlFor="password">Password</Label>
-                <Button variant="link" className="px-0 font-normal text-xs h-auto">
-                  Forgot password?
-                </Button>
+    <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,rgba(74,103,65,0.08),transparent_30%),linear-gradient(180deg,#fbfbf8_0%,#f3f5f1_100%)] p-4">
+      <Card className="w-full max-w-5xl overflow-hidden border-white/60 bg-white/85 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
+        <div className="grid lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="border-b border-border/60 p-8 lg:border-b-0 lg:border-r">
+            <CardHeader className="p-0">
+              <div className="flex justify-start mb-4">
+                <div className="w-12 h-12 bg-[#101513] rounded-2xl flex items-center justify-center text-white font-bold text-2xl">
+                  E
+                </div>
               </div>
-              <Input 
-                id="password" 
-                type="password" 
-                {...register('password')}
-                className={errors.password ? 'border-destructive' : ''}
-              />
-              {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              <CardTitle className="text-3xl">Welcome to EnovAIt</CardTitle>
+              <CardDescription className="text-base leading-7">
+                Sign in to inspect the role ladder, review approvals, and switch between access
+                scopes without losing the audit trail.
+              </CardDescription>
+            </CardHeader>
+
+            <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@example.com"
+                  {...register("email")}
+                  className={errors.email ? "border-destructive" : ""}
+                />
+                {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  {...register("password")}
+                  className={errors.password ? "border-destructive" : ""}
+                />
+                {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label>Role preview</Label>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {roleCatalog.slice(0, 6).map((role) => (
+                    <button
+                      key={role.role}
+                      type="button"
+                      onClick={() => setSelectedRole(role.role)}
+                      className={cn(
+                        "rounded-2xl border p-4 text-left transition-colors",
+                        selectedRole === role.role
+                          ? "border-primary bg-primary/5"
+                          : "border-border/60 bg-white hover:border-primary/30 hover:bg-primary/5"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="font-medium tracking-tight">{role.label}</span>
+                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
+                          {role.scope}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs leading-5 text-muted-foreground">{role.summary}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <Button className="w-full h-11 rounded-full bg-[#101513] text-white hover:bg-[#101513]/90" type="submit" disabled={isSubmitting}>
+                {isSubmitting ? "Signing in..." : "Enter RBAC workspace"}
+              </Button>
+            </form>
+          </div>
+
+          <CardContent className="bg-[#101513] p-8 text-white">
+            <div className="flex h-full flex-col justify-between gap-8">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
+                  Current session preview
+                </p>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">
+                  {getRoleLabel(selectedRole)}
+                </h2>
+                <p className="mt-4 text-sm leading-7 text-white/65">
+                  Switch the preview role to see how the workspace changes. Navigation, approvals,
+                  and available actions all depend on the selected scope.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  "Dashboard and role matrix stay visible to all signed-in users.",
+                  "Approvals and settings remain gated behind policy checks.",
+                  "Audit and reporting surfaces keep a full access trail.",
+                ].map((item) => (
+                  <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Default access</p>
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { label: "Owner", value: "Full control" },
+                    { label: "Manager", value: "Approvals" },
+                    { label: "Viewer", value: "Read only" },
+                  ].map((item) => (
+                    <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">{item.label}</p>
+                      <p className="mt-2 text-sm text-white/80">{item.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button className="w-full" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
-            </Button>
-          </CardFooter>
-        </form>
+        </div>
       </Card>
     </div>
   );
