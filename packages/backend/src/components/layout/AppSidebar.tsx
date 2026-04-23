@@ -40,23 +40,27 @@ export function AppSidebar() {
                 {section.label}
               </div>
               <div className="space-y-1">
-                {section.items.map((item) => (
-                  <NavLink
-                    key={item.href}
-                    to={item.href}
-                    className={({ isActive }) =>
-                      cn(
-                        "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors",
-                        isActive
-                          ? "bg-white/10 text-white shadow-inner"
-                          : "text-white/55 hover:bg-white/5 hover:text-white"
-                      )
-                    }
-                  >
-                    <item.icon className="h-4 w-4 shrink-0" />
-                    <span>{item.label}</span>
-                  </NavLink>
-                ))}
+                {section.items.map((item) => {
+                  const Icon = item.icon;
+
+                  return (
+                    <NavLink
+                      key={item.href}
+                      to={item.href}
+                      className={({ isActive }) =>
+                        cn(
+                          "flex items-center gap-3 rounded-2xl px-3 py-2.5 text-sm transition-colors",
+                          isActive
+                            ? "bg-white/10 text-white shadow-inner"
+                            : "text-white/55 hover:bg-white/5 hover:text-white"
+                        )
+                      }
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{item.label}</span>
+                    </NavLink>
+                  );
+                })}
               </div>
             </div>
           ))}

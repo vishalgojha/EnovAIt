@@ -15,9 +15,22 @@ import {
 import { permissions } from "./rbac.js";
 import type { Permission } from "./rbac.js";
 
+export type NavHref =
+  | "/dashboard"
+  | "/roles"
+  | "/approvals"
+  | "/audit"
+  | "/assistant"
+  | "/channels"
+  | "/data"
+  | "/reports"
+  | "/workflows"
+  | "/integrations"
+  | "/settings";
+
 export interface NavItem {
   label: string;
-  href: string;
+  href: NavHref;
   icon: LucideIcon;
   permission: Permission;
 }

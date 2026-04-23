@@ -4,8 +4,8 @@ import {
   ArrowUpRight,
   CheckCircle2,
   Clock,
+  Compass,
   Shield,
-  ShieldAlert,
   Users,
 } from "lucide-react";
 import {
@@ -23,6 +23,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { cn } from "@/lib/utils";
 import { getRoleLabel, getRolePermissions, getRoleSummary, roleCatalog } from "@/lib/rbac";
 import { useAuthStore } from "@/lib/store/auth";
+import { useGuidedTour } from "@/components/tour/GuidedTour";
 
 const accessData = [
   { name: "Mon", approvals: 12, escalations: 2 },
@@ -54,6 +55,7 @@ const queue = [
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
+  const { startTour } = useGuidedTour();
 
   const role = user?.role;
   const permissionCount = getRolePermissions(role).length;
@@ -94,7 +96,7 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div>
+        <div data-tour-id="dashboard-hero">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
             RBAC dashboard
           </p>
@@ -105,7 +107,15 @@ export default function DashboardPage() {
             {roleSummary} The current user is <span className="font-medium text-foreground">{roleLabel}</span>.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" data-tour-id="dashboard-actions">
+          <Button
+            variant="ghost"
+            className="h-10 rounded-full border border-[#4A6741]/15 bg-[#4A6741]/5 px-4 text-[#101513] hover:bg-[#4A6741]/10"
+            onClick={startTour}
+          >
+            <Compass className="mr-2 h-4 w-4 text-[#4A6741]" />
+            Take tour
+          </Button>
           <Button variant="outline" className="h-10 rounded-full border-white/10 bg-white/70">
             <Clock className="mr-2 h-4 w-4" />
             Last 7 days
@@ -116,7 +126,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4" data-tour-id="dashboard-kpis">
         {stats.map((stat, index) => (
           <motion.div
             key={stat.title}
@@ -148,7 +158,7 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.5fr_0.9fr]">
-        <Card className="border-white/60 bg-white/80 shadow-sm">
+        <Card className="border-white/60 bg-white/80 shadow-sm" data-tour-id="dashboard-chart">
           <CardHeader className="border-b border-border/60">
             <CardTitle className="text-xl tracking-tight">Approval flow</CardTitle>
             <CardDescription>
@@ -187,7 +197,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/60 bg-[#101513] text-white shadow-sm">
+        <Card className="border-white/60 bg-[#101513] text-white shadow-sm" data-tour-id="dashboard-ladder">
           <CardHeader className="border-b border-white/10">
             <CardTitle className="text-xl tracking-tight">Role ladder</CardTitle>
             <CardDescription className="text-white/55">
@@ -215,7 +225,7 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <Card className="border-white/60 bg-white/80 shadow-sm">
+      <Card className="border-white/60 bg-white/80 shadow-sm" data-tour-id="dashboard-activity">
         <CardHeader className="border-b border-border/60">
           <CardTitle className="text-xl tracking-tight">Recent access activity</CardTitle>
           <CardDescription>Who touched what, and what the system did with it.</CardDescription>
