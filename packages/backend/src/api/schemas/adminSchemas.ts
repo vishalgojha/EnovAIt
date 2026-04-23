@@ -17,7 +17,6 @@ const IntegrationTypeSchema = z.enum([
   "iot_mqtt",
   "erp_crm",
   "api_partner",
-  "archon"
 ]);
 
 export const UpsertModuleSchema = z.object({

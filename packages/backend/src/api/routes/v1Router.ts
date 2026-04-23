@@ -1,7 +1,6 @@
 import { Router } from "express";
 
 import { adminRouter } from "./adminRoutes.js";
-import { archonRouter } from "./archonRoutes.js";
 import { brsrReadinessRouter } from "./brsrReadinessRoutes.js";
 import { channelRouter } from "./channelRoutes.js";
 import { chatRouter } from "./chatRoutes.js";
@@ -23,5 +22,4 @@ v1Router.use("/brsr-readiness", brsrReadinessRouter);
 v1Router.use("/review", reviewRouter);
 v1Router.use("/email-intake", emailIntakeRouter);
 v1Router.use("/whatsapp-intake", whatsappIntakeRouter);
-v1Router.use("/archon", archonRouter);
 v1Router.use("/admin", adminRouter);

@@ -73,12 +73,6 @@ export const envSchema = z.object({
   ERP_CRM_WEBHOOK_URL: z.string().url().optional(),
   API_PARTNER_WEBHOOK_URL: z.string().url().optional(),
 
-  // Archon
-  ARCHON_BASE_URL: z.string().url().optional(),
-  ARCHON_API_KEY: z.string().optional(),
-  ARCHON_API_TOKEN: z.string().optional(),
-  ARCHON_TIMEOUT_MS: z.coerce.number().int().positive().default(30000),
-
   // Logging
   LOG_LEVEL: z.string().default("info"),
 });

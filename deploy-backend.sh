@@ -75,8 +75,6 @@ if [ ! -f /opt/enovait/api/.env ]; then
     echo "SUPABASE_KEY=your_supabase_key"
     echo "ANTHROPIC_API_KEY=your_anthropic_key"
     echo "OPENAI_API_KEY=your_openai_key (optional)"
-    echo "ARCHON_BASE_URL=http://localhost:8000 (optional)"
-    echo "ARCHON_API_TOKEN=your_archon_token (optional)"
     echo ""
     read -p "Press Enter after creating .env file..."
 fi
@@ -122,10 +120,6 @@ SUPABASE_KEY=your-supabase-service-role-key
 ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 # OPENROUTER_API_KEY=sk-or-...
-
-# Archon (optional)
-# ARCHON_BASE_URL=http://localhost:8000
-# ARCHON_API_TOKEN=your-archon-token
 
 # WhatsApp (optional)
 # WHATSAPP_CHANNEL=baileys|evolution|meta

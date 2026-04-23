@@ -130,10 +130,6 @@ ANTHROPIC_API_KEY=sk-ant-...
 # OPENAI_API_KEY=sk-...
 # OPENROUTER_API_KEY=sk-or-...
 
-# Archon (optional)
-# ARCHON_BASE_URL=http://localhost:8000
-# ARCHON_API_TOKEN=your-archon-token
-
 # WhatsApp (optional)
 # WHATSAPP_CHANNEL=baileys
 # EVOLUTION_API_URL=http://localhost:8080
@@ -286,7 +282,6 @@ ssh root@46.62.211.251 'tail -f /opt/enovait/logs/api-access.log'
 2. **Automate deployments**: Set up GitHub Actions to auto-deploy on push to `main`
 3. **Backup strategy**: Set up automated database backups
 4. **CDN**: Add Cloudflare for caching and DDoS protection
-5. **Archon deployment**: Deploy the Archon orchestration layer if using AI agents
 
 ---
 

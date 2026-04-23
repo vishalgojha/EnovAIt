@@ -4,7 +4,6 @@ Goal: deliver a production-looking EnovAIt demo for Rustomjee that feels like a 
 
 ## Already Done
 
-- [x] ~~Integrated Archon as an internal orchestration layer.~~
 - [x] ~~Reverse engineered the BRSR PDF into an India-first product blueprint.~~
 - [x] ~~Added a dedicated `BRSR India` module and `BRSR India Annual Filing Copilot` template.~~
 - [x] ~~Added a first-class `brsr_annual_report` report type.~~

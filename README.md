@@ -69,7 +69,6 @@ npm run build:ui
 - reviewer workflows and readiness tracking
 - subscription and seat management
 - EnovAIt super admin controls
-- Archon orchestration for longer reasoning tasks
 
 ## Demo Notes
 

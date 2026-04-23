@@ -1,5 +1,4 @@
 import type { ExtractionInput } from "../services/ai/types.js";
-import type { ArchonTaskPayload } from "../services/archon/archonService.js";
 
 const safeStringArray = (value: unknown): string[] => {
   if (!Array.isArray(value)) {
@@ -59,26 +58,4 @@ export const buildEnovAItExtractionUserPrompt = (input: ExtractionInput): string
     .join("\\n");
 
   return ["Conversation context:", historyText || "(none)", "", "Latest user message:", input.message].join("\\n");
-};
-
-export const buildEnovAItArchonTaskBrief = (payload: ArchonTaskPayload): ArchonTaskPayload => {
-  const safetyPrefix = [
-    "You are supporting EnovAIt, an enterprise ESG and BRSR platform.",
-    "Stay inside the product context provided in the task.",
-    "Prefer concise, operationally useful output.",
-    "If the request is ambiguous, make the smallest safe assumption and explain it.",
-    "Do not introduce unrelated platform features.",
-  ].join(" ");
-
-  return {
-    ...payload,
-    goal: `${safetyPrefix} ${payload.goal}`,
-    context: {
-      source: "enovait-platform",
-      product: "EnovAIt",
-      domain: "ESG/BRSR",
-      supervision: "human-reviewed",
-      ...payload.context
-    }
-  };
 };
