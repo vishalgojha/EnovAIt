@@ -1,55 +1,15 @@
 import { NavLink } from "react-router-dom";
-import {
-  BarChart3,
-  Clock3,
-  Database,
-  FileLock2,
-  KeyRound,
-  LayoutDashboard,
-  MonitorCog,
-  MessagesSquare,
-  Shield,
-  Users,
-  Workflow,
-} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { hasPermission, permissions, getRoleLabel, getRoleSummary } from "@/lib/rbac";
+import { hasPermission, getRoleLabel, getRoleSummary } from "@/lib/rbac";
+import { sidebarSections } from "@/lib/navigation";
 import { useAuthStore } from "@/lib/store/auth";
-
-const sections = [
-  {
-    label: "Overview",
-    items: [
-      { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, permission: permissions.dashboard },
-      { label: "Roles", href: "/roles", icon: Users, permission: permissions.rbacRead },
-      { label: "Approvals", href: "/approvals", icon: Clock3, permission: permissions.approvals },
-      { label: "Audit", href: "/audit", icon: FileLock2, permission: permissions.audit },
-    ],
-  },
-  {
-    label: "Operations",
-    items: [
-      { label: "Assistant", href: "/assistant", icon: MessagesSquare, permission: permissions.assistant },
-      { label: "Data", href: "/data", icon: Database, permission: permissions.data },
-      { label: "Reports", href: "/reports", icon: BarChart3, permission: permissions.reports },
-      { label: "Workflows", href: "/workflows", icon: Workflow, permission: permissions.workflows },
-    ],
-  },
-  {
-    label: "Administration",
-    items: [
-      { label: "Integrations", href: "/integrations", icon: MonitorCog, permission: permissions.integrations },
-      { label: "Settings", href: "/settings", icon: KeyRound, permission: permissions.settings },
-    ],
-  },
-];
 
 export function AppSidebar() {
   const user = useAuthStore((state) => state.user);
   const tenant = useAuthStore((state) => state.tenant);
 
-  const visibleSections = sections
+  const visibleSections = sidebarSections
     .map((section) => ({
       ...section,
       items: section.items.filter((item) => hasPermission(user?.role, item.permission)),

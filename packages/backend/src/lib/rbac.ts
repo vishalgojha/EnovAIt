@@ -9,6 +9,7 @@ export type Permission =
   | "approvals:review"
   | "audit:read"
   | "assistant:use"
+  | "channels:manage"
   | "data:read"
   | "reports:read"
   | "workflows:read"
@@ -22,6 +23,7 @@ export const permissions = {
   approvals: "approvals:review",
   audit: "audit:read",
   assistant: "assistant:use",
+  channels: "channels:manage",
   data: "data:read",
   reports: "reports:read",
   workflows: "workflows:read",
@@ -120,6 +122,7 @@ export const routePermissions: Record<string, Permission> = {
   "/approvals": permissions.approvals,
   "/audit": permissions.audit,
   "/assistant": permissions.assistant,
+  "/channels": permissions.channels,
   "/data": permissions.data,
   "/reports": permissions.reports,
   "/workflows": permissions.workflows,

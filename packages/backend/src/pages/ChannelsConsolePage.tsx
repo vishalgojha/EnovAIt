@@ -34,6 +34,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { channelApi } from '@/lib/api/endpoints';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function ChannelsConsolePage() {
@@ -246,7 +247,7 @@ export function ChannelsConsolePage() {
                         <span className="font-bold">POST</span>
                         <span className="text-muted-foreground">/webhooks/whatsapp</span>
                       </div>
-                      <span className="text-muted-foreground font-mono">200 OK • 45ms</span>
+                      <span className="text-muted-foreground font-mono">200 OK - 45ms</span>
                       <span className="text-[10px] text-muted-foreground">Just now</span>
                     </div>
                   </div>
@@ -262,5 +263,3 @@ export function ChannelsConsolePage() {
     </div>
   );
 }
-
-import { cn } from '@/lib/utils';

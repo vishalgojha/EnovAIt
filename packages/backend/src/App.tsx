@@ -9,8 +9,9 @@ import DashboardPage from "@/pages/Dashboard";
 import RolesPage from "@/pages/Modules";
 import ApprovalsPage from "@/pages/Readiness";
 import AssistantPage from "@/pages/AI";
+import { ChannelsConsolePage } from "@/pages/ChannelsConsolePage";
 import { useAuthStore } from "@/lib/store/auth";
-import { canAccessPath, permissions, type Permission } from "@/lib/rbac";
+import { canAccessPath } from "@/lib/rbac";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { refreshSession } from "@/lib/api/auth";
@@ -33,31 +34,17 @@ function RedirectWithPermission({
   element: ReactNode;
 }) {
   const { user } = useAuthStore();
-  const required = (path in routePermissions ? routePermissions[path] : undefined) as Permission | undefined;
 
   if (!user) {
     return <Navigate to="/login" replace />;
   }
 
-  if (required && !canAccessPath(user.role, path)) {
+  if (!canAccessPath(user.role, path)) {
     return <Navigate to="/dashboard" replace />;
   }
 
   return <>{element}</>;
 }
-
-const routePermissions = {
-  "/dashboard": permissions.dashboard,
-  "/roles": permissions.rbacRead,
-  "/approvals": permissions.approvals,
-  "/audit": permissions.audit,
-  "/assistant": permissions.assistant,
-  "/data": permissions.data,
-  "/reports": permissions.reports,
-  "/workflows": permissions.workflows,
-  "/integrations": permissions.integrations,
-  "/settings": permissions.settings,
-} as const;
 
 function PlaceholderPage({
   title,
@@ -207,6 +194,10 @@ export default function App() {
             element={<RedirectWithPermission path="/assistant" element={<AssistantPage />} />}
           />
           <Route
+            path="/channels"
+            element={<RedirectWithPermission path="/channels" element={<ChannelsConsolePage />} />}
+          />
+          <Route
             path="/data"
             element={
               <RedirectWithPermission
@@ -280,6 +271,7 @@ export default function App() {
           <Route path="/modules" element={<Navigate to="/roles" replace />} />
           <Route path="/readiness" element={<Navigate to="/approvals" replace />} />
           <Route path="/ai" element={<Navigate to="/assistant" replace />} />
+          <Route path="/dashboard/channels" element={<Navigate to="/channels" replace />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

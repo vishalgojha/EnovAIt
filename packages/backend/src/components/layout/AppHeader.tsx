@@ -4,21 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { getRoleLabel, hasPermission, permissions } from "@/lib/rbac";
+import { headerShortcuts } from "@/lib/navigation";
 import { useAuthStore } from "@/lib/store/auth";
-
-const shortcuts = [
-  { label: "Dashboard", href: "/dashboard", permission: permissions.dashboard },
-  { label: "Roles", href: "/roles", permission: permissions.rbacRead },
-  { label: "Approvals", href: "/approvals", permission: permissions.approvals },
-  { label: "Audit", href: "/audit", permission: permissions.audit },
-];
 
 export function AppHeader() {
   const user = useAuthStore((state) => state.user);
   const roleLabel = getRoleLabel(user?.role);
   const canManage = hasPermission(user?.role, permissions.rbacManage);
 
-  const visibleShortcuts = shortcuts.filter((item) => hasPermission(user?.role, item.permission));
+  const visibleShortcuts = headerShortcuts.filter((item) => hasPermission(user?.role, item.permission));
 
   return (
     <header className="sticky top-0 z-20 border-b border-border/70 bg-background/85 backdrop-blur-xl">

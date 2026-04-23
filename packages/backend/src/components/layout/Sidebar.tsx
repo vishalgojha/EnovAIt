@@ -24,7 +24,7 @@ const navigation = [
   { name: 'Data Records', href: '/dashboard/data', icon: Database },
   { name: 'Workflows', href: '/dashboard/workflows', icon: GitBranch },
   { name: 'Reports', href: '/dashboard/reports', icon: BarChart3 },
-  { name: 'Channels Console', href: '/dashboard/channels', icon: Terminal },
+  { name: 'Channels Console', href: '/channels', icon: Terminal },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
