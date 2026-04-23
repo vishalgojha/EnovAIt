@@ -296,3 +296,37 @@ For issues or questions:
 - Check logs: `tail -f /opt/enovait/logs/*.log`
 - Review systemd journals: `journalctl -u enovait-* -f`
 - Test connectivity: `curl -I https://api.enov360.com`
+
+---
+
+## Coolify CLI Sync
+
+If your deployment lives in Coolify, you can bulk-sync env vars from a local `.env` file by resource UUID:
+
+```bash
+npm run coolify:sync-env -- --uuid <coolify-resource-uuid> --file server-env.env --type application
+```
+
+For the smaller core set only:
+
+```bash
+npm run coolify:sync-required-env -- --uuid <coolify-resource-uuid> --file server-env.env --type application
+```
+
+For secret rotation only:
+
+```bash
+npm run coolify:sync-secrets-env -- --uuid <coolify-resource-uuid> --file server-env.env --type application
+```
+
+Helpful flags:
+
+```bash
+npm run coolify:sync-env -- --help
+```
+
+Recommended flow:
+1. Keep the real values in a local file like `server-env.env`
+2. Keep placeholders in `coolify.env.example`
+3. Sync to the target Coolify application or service by UUID
+4. Let the script queue a restart after the env update
