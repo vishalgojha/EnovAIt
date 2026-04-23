@@ -1,9 +1,36 @@
 import { NavLink } from "react-router-dom";
+import {
+  BarChart3,
+  Clock3,
+  Database,
+  FileLock2,
+  KeyRound,
+  LayoutDashboard,
+  MessagesSquare,
+  MonitorCog,
+  Terminal,
+  Users,
+  Workflow,
+} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { hasPermission, getRoleLabel, getRoleSummary } from "@/lib/rbac";
 import { sidebarSections } from "@/lib/navigation";
 import { useAuthStore } from "@/lib/store/auth";
+
+const iconByHref = {
+  "/dashboard": LayoutDashboard,
+  "/roles": Users,
+  "/approvals": Clock3,
+  "/audit": FileLock2,
+  "/assistant": MessagesSquare,
+  "/channels": Terminal,
+  "/data": Database,
+  "/reports": BarChart3,
+  "/workflows": Workflow,
+  "/integrations": MonitorCog,
+  "/settings": KeyRound,
+} as const;
 
 export function AppSidebar() {
   const user = useAuthStore((state) => state.user);
@@ -41,7 +68,7 @@ export function AppSidebar() {
               </div>
               <div className="space-y-1">
                 {section.items.map((item) => {
-                  const Icon = item.icon;
+                  const Icon = iconByHref[item.href as keyof typeof iconByHref];
 
                   return (
                     <NavLink
