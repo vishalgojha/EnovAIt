@@ -9,6 +9,24 @@ values (
   'EnovAIt Demo Org',
   'enovait-demo',
   '{"timezone":"Asia/Kolkata","default_ai_provider":"openai"}'::jsonb
+),
+(
+  '77777777-7777-7777-7777-777777777777',
+  'Rustomjee Landmarks',
+  'rustomjee-landmarks',
+  '{
+    "timezone":"Asia/Kolkata",
+    "default_ai_provider":"openai",
+    "dashboard_context":{
+      "reference_entity":"Keystone Realtors Limited",
+      "brand_name":"Rustomjee",
+      "reporting_framework":"BRSR",
+      "financial_year":"2024-04-01/2025-03-31",
+      "role_notes":{
+        "c_env_officer":"Namrata Nullwalla is seeded as the environmental lead reference for BRSR and sustainability oversight."
+      }
+    }
+  }'::jsonb
 )
 on conflict (id) do update
 set name = excluded.name,
@@ -517,6 +535,43 @@ begin
         role = excluded.role,
         is_active = excluded.is_active;
   end if;
+end $$;
+
+-- Optional Rustomjee app user rows if matching auth users already exist.
+do $$
+declare
+  rustomjee_org_id constant uuid := '77777777-7777-7777-7777-777777777777';
+  seeded_user record;
+begin
+  for seeded_user in
+    select *
+    from (
+      values
+        ('ceo@rustomjee.com', 'Rustomjee CEO', 'ceo'),
+        ('namrata@rustomjee.com', 'Namrata Nullwalla', 'c_env_officer'),
+        ('project.ops@rustomjee.com', 'Project Operations Lead', 'project_ops'),
+        ('hr@rustomjee.com', 'Rustomjee HR Lead', 'hr'),
+        ('finance@rustomjee.com', 'Rustomjee Finance Lead', 'finance'),
+        ('accounts.exec@rustomjee.com', 'Rustomjee Accounts Executive', 'accounts_exec')
+    ) as v(email, full_name, role)
+  loop
+    insert into public.users (id, org_id, email, full_name, role, is_active)
+    select
+      auth_user.id,
+      rustomjee_org_id,
+      seeded_user.email,
+      seeded_user.full_name,
+      seeded_user.role,
+      true
+    from auth.users auth_user
+    where lower(auth_user.email) = lower(seeded_user.email)
+    on conflict (id) do update
+    set org_id = excluded.org_id,
+        email = excluded.email,
+        full_name = excluded.full_name,
+        role = excluded.role,
+        is_active = excluded.is_active;
+  end loop;
 end $$;
 
 commit;

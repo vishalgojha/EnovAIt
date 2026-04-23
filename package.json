@@ -6,9 +6,9 @@
   ],
   "scripts": {
     "dev": "npm run dev --workspace=packages/backend",
-    "dev:ui": "npm run dev --workspace=packages/ui",
     "build": "npm run build --workspace=packages/backend",
-    "build:ui": "npm run build --workspace=packages/ui",
+    "postinstall": "node scripts/ensure-rollup-native.cjs",
+    "ensure:rollup-native": "node scripts/ensure-rollup-native.cjs",
     "prod": "npm run build && npm start",
     "backend": "npm run build --workspace=packages/backend && npm run start --workspace=packages/backend",
     "test": "npm run test --workspace=packages/backend",

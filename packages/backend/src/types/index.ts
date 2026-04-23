@@ -9,7 +9,19 @@ export interface Tenant {
 export interface User {
   id: string;
   email: string;
-  role: 'super_admin' | 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
+  role:
+    | 'super_admin'
+    | 'owner'
+    | 'admin'
+    | 'manager'
+    | 'member'
+    | 'viewer'
+    | 'ceo'
+    | 'c_env_officer'
+    | 'project_ops'
+    | 'hr'
+    | 'finance'
+    | 'accounts_exec';
   name: string;
 }
 

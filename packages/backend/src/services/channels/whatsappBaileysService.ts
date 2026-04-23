@@ -9,10 +9,13 @@ type BaileysSocketLike = {
   ev: {
     on: (event: string, handler: (payload: unknown) => void | Promise<void>) => void;
   };
+  ws?: { close: () => void };
+  end?: (reason: string) => Promise<void>;
 };
 
 let socketPromise: Promise<BaileysSocketLike> | null = null;
 let lastConnectionState = "disconnected";
+let lastQrCode: string | null = null;
 let isBaileysAvailable = true;
 
 const normalizeJid = (value: string): string => {
@@ -67,8 +70,11 @@ const getOrCreateSocket = async (): Promise<BaileysSocketLike> => {
       });
 
       socket.ev.on("connection.update", (update: unknown) => {
-        const payload = update as { connection?: string };
+        const payload = update as { connection?: string; qr?: string };
         lastConnectionState = payload.connection ?? lastConnectionState;
+        if (payload.qr) {
+          lastQrCode = payload.qr;
+        }
       });
 
       return socket;
@@ -126,5 +132,43 @@ export const whatsappBaileysService = {
       connection_state: lastConnectionState,
       user_id: socket.user?.id ?? null
     };
+  },
+
+  async getQrCode(): Promise<{ qr: string | null; connection_state: string; connected: boolean }> {
+    if (!isBaileysAvailable) {
+      return { qr: null, connection_state: "not_installed", connected: false };
+    }
+
+    await getOrCreateSocket();
+
+    return {
+      qr: lastQrCode,
+      connection_state: lastConnectionState,
+      connected: lastConnectionState === "open"
+    };
+  },
+
+  async disconnect(): Promise<{ success: boolean; message: string }> {
+    if (!isBaileysAvailable) {
+      return { success: false, message: "Baileys is not installed" };
+    }
+
+    try {
+      const socket = await getOrCreateSocket();
+      if (socket.end) {
+        await socket.end("logout");
+      } else if (socket.ws) {
+        socket.ws.close();
+      }
+      socketPromise = null;
+      lastConnectionState = "disconnected";
+      lastQrCode = null;
+      return { success: true, message: "Disconnected. Restart the service to reconnect." };
+    } catch (error) {
+      socketPromise = null;
+      lastConnectionState = "disconnected";
+      lastQrCode = null;
+      return { success: false, message: error instanceof Error ? error.message : "Failed to disconnect" };
+    }
   }
 };

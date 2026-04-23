@@ -24,11 +24,16 @@ export const SecretsEnvironmentSchema = z
     SUPABASE_ANON_KEY: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     SUPABASE_JWT_SECRET: z.string().min(1),
-    AI_PROVIDER: z.enum(["anthropic", "openrouter", "openai_compatible"]).optional(),
+    AI_PROVIDER: z.enum(["anthropic", "openrouter", "openai_compatible", "ollama", "groq"]).optional(),
     ANTHROPIC_API_KEY: optionalSecret,
     OPENROUTER_API_KEY: optionalSecret,
+    OPENROUTER_MODEL: optionalSecret,
     OPENAI_BASE_URL: optionalUrl,
-    OPENAI_API_KEY: optionalSecret
+    OPENAI_API_KEY: optionalSecret,
+    OPENAI_MODEL: optionalSecret,
+    OLLAMA_MODEL: optionalSecret,
+    GROQ_API_KEY: optionalSecret,
+    GROQ_MODEL: optionalSecret
   })
   .superRefine((value, ctx) => {
     if (value.AI_PROVIDER === "anthropic" && !value.ANTHROPIC_API_KEY) {
@@ -52,6 +57,22 @@ export const SecretsEnvironmentSchema = z
         code: z.ZodIssueCode.custom,
         path: ["OPENAI_BASE_URL"],
         message: "OPENAI_BASE_URL is required when AI_PROVIDER=openai_compatible"
+      });
+    }
+
+    if (value.AI_PROVIDER === "ollama" && !value.OPENAI_BASE_URL) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["OPENAI_BASE_URL"],
+        message: "OPENAI_BASE_URL is required when AI_PROVIDER=ollama"
+      });
+    }
+
+    if (value.AI_PROVIDER === "groq" && !value.GROQ_API_KEY) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["GROQ_API_KEY"],
+        message: "GROQ_API_KEY is required when AI_PROVIDER=groq"
       });
     }
   });
@@ -97,6 +118,8 @@ export interface SecretsEnvironmentStatus {
     anthropic: boolean;
     openrouter: boolean;
     openaiCompatible: boolean;
+    ollama: boolean;
+    groq: boolean;
   };
 }
 
@@ -124,7 +147,12 @@ export const readSecretsEnvironmentStatus = async (): Promise<SecretsEnvironment
     aiKeys: {
       anthropic: lookup.has("ANTHROPIC_API_KEY") && lookup.get("ANTHROPIC_API_KEY") !== "",
       openrouter: lookup.has("OPENROUTER_API_KEY") && lookup.get("OPENROUTER_API_KEY") !== "",
-      openaiCompatible: lookup.has("OPENAI_BASE_URL") && lookup.get("OPENAI_BASE_URL") !== ""
+      openaiCompatible: lookup.has("OPENAI_BASE_URL") && lookup.get("OPENAI_BASE_URL") !== "",
+      ollama:
+        lookup.get("AI_PROVIDER") === "ollama" &&
+        lookup.has("OPENAI_BASE_URL") &&
+        lookup.get("OPENAI_BASE_URL") !== "",
+      groq: lookup.has("GROQ_API_KEY") && lookup.get("GROQ_API_KEY") !== ""
     }
   };
 };
@@ -158,11 +186,26 @@ export const writeSecretsEnvironment = async (updates: SecretsEnvironmentInput):
   if (updates.OPENROUTER_API_KEY) {
     normalizedUpdates.OPENROUTER_API_KEY = updates.OPENROUTER_API_KEY;
   }
+  if (updates.OPENROUTER_MODEL) {
+    normalizedUpdates.OPENROUTER_MODEL = updates.OPENROUTER_MODEL;
+  }
   if (updates.OPENAI_BASE_URL) {
     normalizedUpdates.OPENAI_BASE_URL = updates.OPENAI_BASE_URL;
   }
   if (updates.OPENAI_API_KEY) {
     normalizedUpdates.OPENAI_API_KEY = updates.OPENAI_API_KEY;
+  }
+  if (updates.OPENAI_MODEL) {
+    normalizedUpdates.OPENAI_MODEL = updates.OPENAI_MODEL;
+  }
+  if (updates.OLLAMA_MODEL) {
+    normalizedUpdates.OLLAMA_MODEL = updates.OLLAMA_MODEL;
+  }
+  if (updates.GROQ_API_KEY) {
+    normalizedUpdates.GROQ_API_KEY = updates.GROQ_API_KEY;
+  }
+  if (updates.GROQ_MODEL) {
+    normalizedUpdates.GROQ_MODEL = updates.GROQ_MODEL;
   }
 
   const serializedUpdates = Object.entries(normalizedUpdates).map(([key, value]) => `${key}=${formatEnvValue(value)}`);

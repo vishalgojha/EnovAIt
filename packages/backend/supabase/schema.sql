@@ -108,7 +108,7 @@ create table if not exists public.users (
   org_id uuid not null references public.organizations(id) on delete restrict,
   email text not null,
   full_name text,
-  role text not null default 'member' check (role in ('super_admin', 'owner', 'admin', 'manager', 'member', 'viewer')),
+  role text not null default 'member' check (role in ('super_admin', 'owner', 'admin', 'manager', 'member', 'viewer', 'ceo', 'c_env_officer', 'project_ops', 'hr', 'finance', 'accounts_exec')),
   profile jsonb not null default '{}'::jsonb,
   is_active boolean not null default true,
   created_by uuid references auth.users(id),

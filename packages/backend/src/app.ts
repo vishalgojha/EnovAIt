@@ -11,6 +11,7 @@ import { requireAuth } from "./api/middlewares/requireAuth.js";
 import { authRouter } from "./api/routes/authRoutes.js";
 import { channelWebhookRouter } from "./api/routes/channelWebhookRoutes.js";
 import { healthRouter } from "./api/routes/healthRoutes.js";
+import { chatRouter } from "./api/routes/chatRoutes.js";
 import { v1Router } from "./api/routes/v1Router.js";
 import { whatsappEvolutionWebhookRouter } from "./api/routes/whatsappEvolutionWebhookRoutes.js";
 import { whatsappWebhookRouter } from "./api/routes/whatsappWebhookRoutes.js";
@@ -38,6 +39,7 @@ app.use("/api/v1/channels/webhooks", webhookLimiter, verifyWebhookSignature, cha
 app.use("/api/v1/channels/whatsapp/official/webhook", webhookLimiter, verifyWebhookSignature, whatsappWebhookRouter);
 app.use("/api/v1/channels/whatsapp/evolution/webhook", webhookLimiter, verifyWebhookSignature, whatsappEvolutionWebhookRouter);
 app.use("/api/v1/public/auth", sanitizeInput, authRouter);
+app.use("/api/v1/ai", requireAuth, chatRouter);
 app.use("/api/v1", requireAuth, tenantAwareLimiter, sanitizeInput, v1Router);
 
 app.use(notFoundHandler);

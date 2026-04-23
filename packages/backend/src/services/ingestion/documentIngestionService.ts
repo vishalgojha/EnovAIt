@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 
 import { AppError } from "../../lib/errors.js";
+import { logger } from "../../lib/logger.js";
 import type { AuthContext } from "../../types/auth.js";
 import { brsrExtractionService } from "../extraction/brsrExtractionService.js";
 import { workflowEngine } from "../workflow/workflowEngine.js";
@@ -28,17 +29,27 @@ const normalizeFileStem = (fileName: string): string =>
     .slice(0, 120) || "Imported document";
 
 const extractTextFromPdf = async (fileBuffer: Buffer): Promise<{ text: string; pageCount: number }> => {
-  const pdfParseModule = await import("pdf-parse");
-  const pdfParse = (pdfParseModule as unknown as { default?: (input: Buffer) => Promise<{ text: string; numpages?: number }> }).default;
-  if (!pdfParse) {
-    throw new AppError("PDF parser unavailable", 500, "PDF_PARSE_UNAVAILABLE");
-  }
+  try {
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = (pdfParseModule as unknown as { default?: (input: Buffer) => Promise<{ text: string; numpages?: number }> }).default;
+    if (!pdfParse) {
+      throw new AppError("PDF parser unavailable", 500, "PDF_PARSE_UNAVAILABLE");
+    }
 
-  const parsed = await pdfParse(fileBuffer);
-  return {
-    text: parsed.text ?? "",
-    pageCount: parsed.numpages ?? 0
-  };
+    const parsed = await pdfParse(fileBuffer);
+    return {
+      text: parsed.text ?? "",
+      pageCount: parsed.numpages ?? 0
+    };
+  } catch (error) {
+    logger.error({ err: error }, "PDF extraction failed");
+    throw new AppError(
+      "Failed to read PDF file",
+      400,
+      "PDF_PARSE_FAILED",
+      error instanceof Error ? error : undefined
+    );
+  }
 };
 
 const extractRowsFromSpreadsheet = (fileBuffer: Buffer): { text: string; rowCount: number } => {

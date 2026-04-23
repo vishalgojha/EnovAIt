@@ -1,0 +1,28 @@
+[Unit]
+Description=EnovAIt Backend API
+After=network.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/enovait/api
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=SUPABASE_URL=https://your-project-id.supabase.co
+Environment=SUPABASE_ANON_KEY=your-anon-key
+Environment=SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+Environment=SUPABASE_JWT_SECRET=your-jwt-secret
+Environment=AI_PROVIDER=groq
+Environment=GROQ_API_KEY=your-groq-api-key
+Environment=GROQ_MODEL=llama-3.3-70b-versatile
+Environment=OPENROUTER_API_KEY=your-openrouter-api-key
+Environment=OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
+ExecStart=/usr/bin/node dist/index.js
+Restart=on-failure
+RestartSec=10
+StandardOutput=append:/opt/enovait/logs/api-access.log
+StandardError=append:/opt/enovait/logs/api-error.log
+
+[Install]
+WantedBy=multi-user.target

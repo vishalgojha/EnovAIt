@@ -28,12 +28,14 @@ export const requireAuth = async (req: Request, _res: Response, next: NextFuncti
       throw new AppError("No application user mapping found", 403, "USER_NOT_MAPPED", error ?? undefined);
     }
 
-    req.auth = {
+    const authContext = {
       userId: appUser.id,
       orgId: appUser.org_id,
       role: appUser.role,
       email: appUser.email
     };
+
+    req.auth = authContext;
     req.supabase = userClient;
     req.accessToken = token;
 

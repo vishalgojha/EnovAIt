@@ -1,0 +1,51 @@
+{
+	auto_https disable_redirects
+}
+
+app.propai.live {
+	reverse_proxy 127.0.0.1:18089 {
+		flush_interval -1
+		transport http {
+			response_header_timeout 120s
+			dial_timeout 30s
+		}
+	}
+}
+
+api.propai.live {
+	reverse_proxy 127.0.0.1:8788
+}
+
+license.propai.live {
+	reverse_proxy 127.0.0.1:8788
+}
+
+www.propai.live {
+	reverse_proxy 127.0.0.1:18089 {
+		flush_interval -1
+		transport http {
+			response_header_timeout 120s
+			dial_timeout 30s
+		}
+	}
+}
+
+# BEGIN ENOVAIT IP
+http://46.62.211.251 {
+	encode gzip
+
+	handle /api/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	handle /ws/* {
+		reverse_proxy 127.0.0.1:3000
+	}
+
+	handle {
+		root * /opt/enovait/app
+		try_files {path} /index.html
+		file_server
+	}
+}
+# END ENOVAIT IP

@@ -42,8 +42,13 @@ GROQ_MODEL=llama-3.3-70b-versatile
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
 `;
-    fs.writeFileSync(envPath, template, 'utf-8');
-    fixes.push('Created .env template (configure manually)');
+    try {
+      fs.mkdirSync(path.dirname(envPath), { recursive: true });
+      fs.writeFileSync(envPath, template, 'utf-8');
+      fixes.push('Created .env template (configure manually)');
+    } catch (error) {
+      logger.warn({ envPath, error }, 'Skipped .env template creation');
+    }
   }
 
   // 4. Ensure AI provider is configured

@@ -214,11 +214,11 @@ No PAT is needed for GHCR when using default `GITHUB_TOKEN` in this workflow.
 ## Docker Deployment
 
 - Build locally:
-  - `docker build -t enovait-backend:latest .`
+  - from the repo root: `docker build -f packages/backend/Dockerfile -t enovait-backend:latest .`
 - Run locally:
   - `docker run --env-file .env -p 8080:8080 enovait-backend:latest`
 
-The Docker setup uses a multi-stage build and runs compiled `dist/index.js` in production mode.
+The Docker setup uses a multi-stage build and runs compiled `dist/index.js` in production mode. The Docker build context must be the repo root because the Dockerfile copies files from `packages/backend/...`.
 
 ## New AI Provider Options
 

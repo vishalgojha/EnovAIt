@@ -1,8 +1,9 @@
-import { Router } from "express";
+import { Router } from 'express';
 
-import { chatController } from "../controllers/chatController.js";
-import { asyncHandler } from "../../lib/asyncHandler.js";
+import { asyncHandler } from '../../lib/asyncHandler.js';
+import { chatHandler, getProvidersHandler } from '../controllers/chatController.js';
 
 export const chatRouter = Router();
 
-chatRouter.post("/message", asyncHandler(chatController.postMessage));
+chatRouter.post('/chat', asyncHandler(chatHandler));
+chatRouter.get('/providers', asyncHandler(getProvidersHandler));

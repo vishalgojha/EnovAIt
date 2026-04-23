@@ -128,6 +128,16 @@ export const channelController = {
     res.status(200).json({ data: status });
   },
 
+  async getBaileysQr(_req: Request, res: Response) {
+    const qrData = await whatsappBaileysService.getQrCode();
+    res.status(200).json({ data: qrData });
+  },
+
+  async disconnectBaileys(_req: Request, res: Response) {
+    const result = await whatsappBaileysService.disconnect();
+    res.status(200).json({ data: result });
+  },
+
   verifyOfficialWebhook(req: Request, res: Response) {
     const query = OfficialWebhookVerifyQuerySchema.parse(req.query);
     const challenge = whatsappOfficialService.verifyWebhook(

@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { AppError } from "../../lib/errors.js";
+import { logger } from "../../lib/logger.js";
 import { getRequestContext } from "../../lib/requestContext.js";
 import { documentIngestionService } from "../../services/ingestion/documentIngestionService.js";
 import { excelIngestionService } from "../../services/ingestion/excelIngestionService.js";
@@ -87,15 +88,21 @@ export const dataController = {
       throw new AppError("File is required", 400, "FILE_REQUIRED");
     }
 
-    const result = await documentIngestionService.ingest(
-      supabase,
-      auth,
-      module_id,
-      req.file.buffer,
-      req.file.originalname,
-      req.file.mimetype
-    );
+    logger.info({ module_id, fileName: req.file.originalname, mimeType: req.file.mimetype, size: req.file.size }, "Starting document ingestion");
 
-    res.status(202).json({ data: result });
+    try {
+      const result = await documentIngestionService.ingest(
+        supabase,
+        auth,
+        module_id,
+        req.file.buffer,
+        req.file.originalname,
+        req.file.mimetype
+      );
+      res.status(202).json({ data: result });
+    } catch (error) {
+      logger.error({ err: error, module_id, fileName: req.file.originalname }, "Document ingestion failed");
+      throw error;
+    }
   }
 };

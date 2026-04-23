@@ -13,12 +13,16 @@ import { buildExtractionSystemPrompt, buildExtractionUserPrompt, extractionOutpu
 
 export class OpenAIExtractionProvider implements AIExtractionProvider {
   private readonly client: OpenAI;
+  private readonly model: string;
 
   constructor() {
+    const isOllama = env.AI_PROVIDER === "ollama";
+
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY ?? "local-api-key",
-      baseURL: env.OPENAI_BASE_URL
+      baseURL: env.OPENAI_BASE_URL ?? (isOllama ? "http://127.0.0.1:11434/v1" : undefined)
     });
+    this.model = isOllama ? env.OLLAMA_MODEL ?? env.OPENAI_MODEL ?? env.AI_MODEL : env.OPENAI_MODEL ?? env.AI_MODEL;
   }
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {
@@ -26,7 +30,7 @@ export class OpenAIExtractionProvider implements AIExtractionProvider {
       const completion = await withRetry(
         () =>
           this.client.chat.completions.create({
-            model: env.OPENAI_MODEL ?? env.AI_MODEL,
+            model: this.model,
             temperature: 0,
             messages: [
               { role: "system", content: buildExtractionSystemPrompt(input) },

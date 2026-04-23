@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
 import type { ReactNode } from "react";
+import axios from "axios";
 import { AppShell } from "@/components/layout/AppShell";
 import { LoginPage } from "@/pages/LoginPage";
 import LandingPage from "@/pages/Landing";
@@ -11,6 +13,7 @@ import { useAuthStore } from "@/lib/store/auth";
 import { canAccessPath, permissions, type Permission } from "@/lib/rbac";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { refreshSession } from "@/lib/api/auth";
 
 function RequireAuth({ children }: { children: ReactNode }) {
   const { user } = useAuthStore();
@@ -78,9 +81,90 @@ function PlaceholderPage({
   );
 }
 
+function SessionRestoringScreen() {
+  return (
+    <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,rgba(74,103,65,0.08),transparent_30%),linear-gradient(180deg,#fbfbf8_0%,#f3f5f1_100%)] p-4">
+      <Card className="w-full max-w-xl border-white/60 bg-white/85 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
+        <CardHeader>
+          <CardTitle className="text-3xl tracking-tight">Restoring session</CardTitle>
+          <CardDescription className="text-base leading-7">
+            Verifying the saved token with the backend and reloading the authoritative role and tenant.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="h-2 overflow-hidden rounded-full bg-[#101513]/10">
+            <div className="h-full w-1/2 animate-pulse rounded-full bg-[#4A6741]" />
+          </div>
+          <p className="text-sm leading-7 text-muted-foreground">
+            This prevents the app from briefly rendering stale local access before the server response arrives.
+          </p>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function AuthBootstrap() {
+  const token = useAuthStore((state) => state.token);
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const setSessionStatus = useAuthStore((state) => state.setSessionStatus);
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  useEffect(() => {
+    if (!hasHydrated) {
+      return;
+    }
+
+    let active = true;
+
+    if (!token) {
+      setSessionStatus("ready");
+      return () => {
+        active = false;
+      };
+    }
+
+    setSessionStatus("loading");
+
+    void refreshSession()
+      .then((session) => {
+        if (!active) {
+          return;
+        }
+        setAuth(session.user, session.tenant, session.token);
+        setSessionStatus("ready");
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+
+        if (axios.isAxiosError(error) && [401, 403].includes(error.response?.status ?? 0)) {
+          clearAuth();
+        }
+
+        setSessionStatus("ready");
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [hasHydrated, token, setAuth, clearAuth, setSessionStatus]);
+
+  return null;
+}
+
 export default function App() {
+  const hasHydrated = useAuthStore((state) => state.hasHydrated);
+  const sessionStatus = useAuthStore((state) => state.sessionStatus);
+
   return (
     <BrowserRouter>
+      <AuthBootstrap />
+      {!hasHydrated || sessionStatus === "loading" ? (
+        <SessionRestoringScreen />
+      ) : (
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
@@ -200,6 +284,7 @@ export default function App() {
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      )}
     </BrowserRouter>
   );
 }

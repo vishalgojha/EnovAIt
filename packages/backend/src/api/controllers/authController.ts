@@ -201,5 +201,19 @@ export const authController = {
       }
       throw error;
     }
+  },
+
+  async me(req: Request, res: Response) {
+    if (!req.accessToken) {
+      throw new AppError("Missing access token on authenticated request", 401, "UNAUTHORIZED");
+    }
+
+    const profile = await fetchAuthProfile(req.accessToken);
+    res.status(200).json({
+      data: {
+        token: req.accessToken,
+        ...profile
+      }
+    });
   }
 };

@@ -1,0 +1,57 @@
+services:
+    uf92coisjyo86lx083ad5nel-044044118694:
+        image: 'uf92coisjyo86lx083ad5nel:a0a298d1c138043af2c3e2417a0c07735213ee31'
+        container_name: uf92coisjyo86lx083ad5nel-044044118694
+        restart: unless-stopped
+        expose:
+            - '3000'
+        networks:
+            coolify:
+                aliases:
+                    - uf92coisjyo86lx083ad5nel-044044118694
+        mem_limit: '0'
+        memswap_limit: '0'
+        mem_swappiness: 60
+        mem_reservation: '0'
+        cpus: 0.0
+        cpu_shares: 1024
+        env_file:
+            - .env
+        labels:
+            - traefik.enable=true
+            - traefik.http.middlewares.gzip.compress=true
+            - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+            - traefik.http.routers.http-0-uf92coisjyo86lx083ad5nel.entryPoints=http
+            - traefik.http.routers.http-0-uf92coisjyo86lx083ad5nel.middlewares=redirect-to-https
+            - 'traefik.http.routers.http-0-uf92coisjyo86lx083ad5nel.rule=Host(`app.enov360.com`) && PathPrefix(`/`)'
+            - traefik.http.routers.http-0-uf92coisjyo86lx083ad5nel.service=http-0-uf92coisjyo86lx083ad5nel
+            - traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.entryPoints=https
+            - traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.middlewares=gzip
+            - 'traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.rule=Host(`app.enov360.com`) && PathPrefix(`/`)'
+            - traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.service=https-0-uf92coisjyo86lx083ad5nel
+            - traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.tls=true
+            - traefik.http.routers.https-0-uf92coisjyo86lx083ad5nel.tls.certresolver=letsencrypt
+            - traefik.http.services.http-0-uf92coisjyo86lx083ad5nel.loadbalancer.server.port=3000
+            - traefik.http.services.https-0-uf92coisjyo86lx083ad5nel.loadbalancer.server.port=3000
+            - 'caddy_0.encode=zstd gzip'
+            - 'caddy_0.handle_path.0_reverse_proxy={{upstreams 3000}}'
+            - 'caddy_0.handle_path=/*'
+            - caddy_0.header=-Server
+            - 'caddy_0.try_files={path} /index.html /index.php'
+            - 'caddy_0=https://app.enov360.com'
+            - caddy_ingress_network=coolify
+            - coolify.managed=true
+            - coolify.version=4.0.0-beta.473
+            - coolify.applicationId=4
+            - coolify.type=application
+            - coolify.name=uf92coisjyo86lx083ad5nel
+            - coolify.resourceName=enov-a-itmain
+            - coolify.projectName=enovait
+            - coolify.serviceName=enov-a-itmain
+            - coolify.environmentName=production
+            - coolify.pullRequestId=0
+networks:
+    coolify:
+        external: true
+        name: coolify
+        attachable: true

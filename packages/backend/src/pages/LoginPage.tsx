@@ -1,4 +1,3 @@
-import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -6,11 +5,11 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuthStore } from "@/lib/store/auth";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
-import { roleCatalog, getRoleLabel } from "@/lib/rbac";
+import { signIn } from "@/lib/api/auth";
+import { roleCatalog } from "@/lib/rbac";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -22,7 +21,6 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginPage() {
   const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
-  const [selectedRole, setSelectedRole] = React.useState(roleCatalog[1].role);
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -34,30 +32,13 @@ export function LoginPage() {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      await new Promise((resolve) => setTimeout(resolve, 600));
-
-      const selected = roleCatalog.find((entry) => entry.role === selectedRole) ?? roleCatalog[1];
-
-      setAuth(
-        {
-          id: "u1",
-          email: data.email,
-          name: getRoleLabel(selected.role),
-          role: selected.role,
-        },
-        {
-          id: "t1",
-          name: "EnovAIt Control Tenant",
-          slug: "enovait-control",
-          settings: { theme: "light", rbac: true },
-        },
-        "mock-jwt-token"
-      );
-
+      const session = await signIn(data);
+      setAuth(session.user, session.tenant, session.token);
       toast.success("Signed in with RBAC scope");
       navigate("/dashboard");
-    } catch (_error) {
-      toast.error("Failed to login. Please check your credentials.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to login. Please check your credentials.";
+      toast.error(message);
     }
   };
 
@@ -102,33 +83,6 @@ export function LoginPage() {
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
 
-              <div className="space-y-2">
-                <Label>Role preview</Label>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {roleCatalog.slice(0, 6).map((role) => (
-                    <button
-                      key={role.role}
-                      type="button"
-                      onClick={() => setSelectedRole(role.role)}
-                      className={cn(
-                        "rounded-2xl border p-4 text-left transition-colors",
-                        selectedRole === role.role
-                          ? "border-primary bg-primary/5"
-                          : "border-border/60 bg-white hover:border-primary/30 hover:bg-primary/5"
-                      )}
-                    >
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="font-medium tracking-tight">{role.label}</span>
-                        <span className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground">
-                          {role.scope}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs leading-5 text-muted-foreground">{role.summary}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <Button className="w-full h-11 rounded-full bg-[#101513] text-white hover:bg-[#101513]/90" type="submit" disabled={isSubmitting}>
                 {isSubmitting ? "Signing in..." : "Enter RBAC workspace"}
               </Button>
@@ -139,14 +93,12 @@ export function LoginPage() {
             <div className="flex h-full flex-col justify-between gap-8">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                  Current session preview
+                  Server-backed session
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight">
-                  {getRoleLabel(selectedRole)}
-                </h2>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backend-controlled access</h2>
                 <p className="mt-4 text-sm leading-7 text-white/65">
-                  Switch the preview role to see how the workspace changes. Navigation, approvals,
-                  and available actions all depend on the selected scope.
+                  The backend resolves the user role during sign in and stores it in the authenticated
+                  session. The login form no longer fabricates access locally.
                 </p>
               </div>
 
@@ -163,16 +115,12 @@ export function LoginPage() {
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Default access</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Recognized roles</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
-                  {[
-                    { label: "Owner", value: "Full control" },
-                    { label: "Manager", value: "Approvals" },
-                    { label: "Viewer", value: "Read only" },
-                  ].map((item) => (
+                  {roleCatalog.slice(0, 3).map((item) => (
                     <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-3">
                       <p className="text-[10px] uppercase tracking-[0.2em] text-white/45">{item.label}</p>
-                      <p className="mt-2 text-sm text-white/80">{item.value}</p>
+                      <p className="mt-2 text-sm text-white/80">{item.scope}</p>
                     </div>
                   ))}
                 </div>
