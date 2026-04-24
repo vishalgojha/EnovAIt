@@ -7,6 +7,8 @@ RUN npm ci
 
 FROM deps AS build
 COPY packages/backend/tsconfig.json ./
+COPY packages/backend/index.html ./
+COPY packages/backend/vite.config.ts ./
 COPY packages/backend/src ./src
 RUN npm run build
 
@@ -22,4 +24,4 @@ COPY --from=build /app/dist ./dist
 COPY packages/backend/.env.example ./.env.example
 
 EXPOSE 8080
-CMD ["node", "dist/index.js"]
+CMD ["node", "dist/server/index.js"]

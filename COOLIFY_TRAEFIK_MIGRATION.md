@@ -4,14 +4,14 @@ This project is currently deployed on Hetzner with:
 
 - `Caddy` terminating HTTP/HTTPS and routing requests
 - frontend files copied to `/opt/enovait/app`
-- backend running as a host `systemd` service on port `3000`
+- backend running as a host `systemd` service on port `8080`
 
 For Coolify, the cleaner model is:
 
 - `Coolify` manages deployment from the Git repo
 - `Traefik` is the default proxy and terminates TLS
 - frontend and backend run as containers
-- host-level `Caddyfile` routing for EnovAIt is removed after cutover
+- host-level Caddy routing for EnovAIt is removed after cutover
 
 Coolify documentation used for this setup:
 
@@ -41,13 +41,13 @@ If you want a single domain later, keep the UI on the main host and route `/api`
 6. If you are deploying only the UI as a single Dockerfile app instead of Compose, keep the build context at the repo root and set the Dockerfile path to `packages/ui/Dockerfile`.
 7. Add environment variables in Coolify for the backend service.
 8. Assign domains in Coolify:
-   - UI service: `https://app.enov360.com:3000`
-   - API service: `https://api.enov360.com:8080`
+   - UI service: `https://app.enov360.com`
+   - API service: `https://api.enov360.com`
 9. Set `VITE_API_BASE_URL` in Coolify to `https://api.enov360.com/api/v1`.
 10. The UI Dockerfile now installs from the workspace root `package-lock.json`, so keep the build context at the repo root.
 10. Deploy and verify health checks.
 
-Note: with Coolify compose deployments, the compose file is the source of truth for container config. Traefik is managed by Coolify, so you do not need the old Caddy routes for these domains.
+Note: with Coolify compose deployments, the compose file is the source of truth for container config. Traefik is managed by Coolify, so you do not need the old Caddy routes for these domains. Public access still happens on `80` and `443`; the `8080` and `80` values are only internal container ports.
 
 Important: `VITE_API_BASE_URL` is consumed at frontend build time, not runtime. In this stack it is passed into the UI Docker build through a compose build arg. The UI build also relies on the repo root `package-lock.json`, not a package-local lockfile.
 
@@ -67,7 +67,7 @@ Do not remove the current records until the Coolify deployment is healthy.
    - `https://api.enov360.com/api/v1/health`
    - `https://app.enov360.com`
 3. Update any frontend env or integrations that still reference the server IP.
-4. Remove only the EnovAIt block from the host `Caddyfile`.
+4. Remove the old host routing and service setup after Coolify is healthy.
 5. Stop and disable the old host service:
    - `systemctl stop enovait-api`
    - `systemctl disable enovait-api`
@@ -75,7 +75,7 @@ Do not remove the current records until the Coolify deployment is healthy.
 
 ## Important security issue
 
-The checked-in `enovait-api.service` contains live-looking secrets. Those values should not remain in the repository.
+The old host service file pattern contained live-looking secrets. Those values should not remain in any tracked deployment artifact.
 
 Recommended action:
 
@@ -87,7 +87,6 @@ Recommended action:
 
 After a successful cutover, these are no longer part of the main deployment path:
 
-- `Caddyfile` entries for EnovAIt
 - manual `scp` deployment scripts
 - host `systemd` unit for EnovAIt backend
 - static files under `/opt/enovait/app`

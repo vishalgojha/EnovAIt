@@ -1,17 +1,18 @@
 {
   "name": "enovait",
   "private": true,
+  "bin": {
+    "coolify": "./scripts/coolify.mjs"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
     "dev": "npm run dev --workspace=packages/backend",
     "build": "npm run build --workspace=packages/backend",
-    "postinstall": "node scripts/ensure-rollup-native.cjs",
+    "postinstall": "node scripts/ensure-rollup-native.cjs && node scripts/link-coolify-bin.cjs",
     "ensure:rollup-native": "node scripts/ensure-rollup-native.cjs",
-    "coolify:sync-env": "node scripts/coolify-sync-env.mjs",
-    "coolify:sync-required-env": "node scripts/coolify-sync-required-env.mjs",
-    "coolify:sync-secrets-env": "node scripts/coolify-sync-secrets-env.mjs",
+    "coolify": "node scripts/coolify.mjs",
     "prod": "npm run build && npm start",
     "backend": "npm run build --workspace=packages/backend && npm run start --workspace=packages/backend",
     "test": "npm run test --workspace=packages/backend",

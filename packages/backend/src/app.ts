@@ -1,6 +1,8 @@
 import cors from "cors";
 import express, { type Request } from "express";
 import helmet from "helmet";
+import { existsSync } from "node:fs";
+import { join, extname } from "node:path";
 
 import { errorHandler } from "./api/middlewares/errorHandler.js";
 import { globalApiLimiter, tenantAwareLimiter, webhookLimiter } from "./api/middlewares/rateLimiters.js";
@@ -18,6 +20,8 @@ import { whatsappWebhookRouter } from "./api/routes/whatsappWebhookRoutes.js";
 import { requestLogger } from "./lib/logger.js";
 
 export const app = express();
+const clientDistDir = join(process.cwd(), "dist", "client");
+const hasClientBuild = existsSync(join(clientDistDir, "index.html"));
 
 app.use(helmet());
 app.use(cors());
@@ -41,6 +45,19 @@ app.use("/api/v1/channels/whatsapp/evolution/webhook", webhookLimiter, verifyWeb
 app.use("/api/v1/public/auth", sanitizeInput, authRouter);
 app.use("/api/v1/ai", requireAuth, chatRouter);
 app.use("/api/v1", requireAuth, tenantAwareLimiter, sanitizeInput, v1Router);
+
+if (hasClientBuild) {
+  app.use(express.static(clientDistDir));
+
+  app.get("*", (req, res, next) => {
+    if (req.path.startsWith("/api") || extname(req.path)) {
+      next();
+      return;
+    }
+
+    res.sendFile(join(clientDistDir, "index.html"));
+  });
+}
 
 app.use(notFoundHandler);
 app.use(errorHandler);
