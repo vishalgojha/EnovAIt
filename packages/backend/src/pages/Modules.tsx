@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { getRolePermissions, hasPermission, permissions, roleCatalog } from "@/lib/rbac";
+import { getRolePermissions, hasPermission, permissionLabels, permissions, roleCatalog } from "@/lib/rbac";
 import { useAuthStore } from "@/lib/store/auth";
 
 const iconByRole = {
@@ -41,28 +41,27 @@ export default function RolesPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            Access control
+            People & access
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Roles and permission scopes
+            Who can see and do what
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Review the built-in role ladder, the default scope for each role, and how much of the
-            workspace each role can reach.
+            Each role changes which pages someone can open, what they can change, and which requests they can review.
           </p>
         </div>
         <div className="flex items-center gap-2">
           <div className="relative w-full max-w-sm">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="Filter roles..."
+              placeholder="Search roles..."
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="h-11 border-white/10 bg-white/70 pl-10 shadow-sm"
             />
           </div>
           <Button className="h-11 rounded-full bg-[#101513] px-5 text-white hover:bg-[#101513]/90" disabled={!canEdit}>
-            Create role
+            Add role
           </Button>
         </div>
       </div>
@@ -119,16 +118,16 @@ export default function RolesPage() {
                       key={permission}
                       className="rounded-full border border-primary/15 bg-primary/5 text-[10px] uppercase tracking-[0.2em] text-primary hover:bg-primary/5"
                     >
-                      {permission}
+                      {permissionLabels[permission]}
                     </Badge>
                   ))}
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
-                    Role tier: {isPrivileged ? "Privileged" : "Standard"}
+                    Access level: {isPrivileged ? "Can make changes" : "Standard access"}
                   </span>
                   <Button variant="ghost" size="sm" className="rounded-full px-3 text-primary" disabled={!canEdit}>
-                    Edit
+                    Change
                   </Button>
                 </div>
               </CardContent>

@@ -1,5 +1,5 @@
 import { Bell, Search, Shield, Sparkles } from "lucide-react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -8,9 +8,21 @@ import { headerShortcuts } from "@/lib/navigation";
 import { useAuthStore } from "@/lib/store/auth";
 
 export function AppHeader() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const roleLabel = getRoleLabel(user?.role);
   const canManage = hasPermission(user?.role, permissions.rbacManage);
+  const canReviewApprovals = hasPermission(user?.role, permissions.approvals);
+  const primaryAction = canManage
+    ? { label: "Manage access", href: "/roles" }
+    : canReviewApprovals
+      ? { label: "Open requests", href: "/approvals" }
+      : { label: "View access", href: "/roles" };
+  const sessionLabel = canManage
+    ? "Can make changes"
+    : canReviewApprovals
+      ? "Can review requests"
+      : "View only";
 
   const visibleShortcuts = headerShortcuts.filter((item) => hasPermission(user?.role, item.permission));
 
@@ -20,7 +32,7 @@ export function AppHeader() {
         <div className="min-w-0 flex-1">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
             <Sparkles className="h-3.5 w-3.5" />
-            {roleLabel} session
+            {roleLabel} signed in
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto md:hidden">
             {visibleShortcuts.map((item) => (
@@ -44,7 +56,7 @@ export function AppHeader() {
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search users, roles, or policies"
+                placeholder="Search people, requests, or pages"
                 className="h-11 border-white/10 bg-white/70 pl-10 shadow-sm shadow-black/5 backdrop-blur"
               />
             </div>
@@ -73,17 +85,22 @@ export function AppHeader() {
         <div className="ml-auto flex items-center gap-2">
           <div className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/60 px-3 py-2 text-xs font-medium text-muted-foreground sm:flex">
             <Shield className="h-3.5 w-3.5 text-[#4A6741]" />
-            {canManage ? "Privileged session" : "Restricted session"}
+            {sessionLabel}
           </div>
           <Button
             variant="ghost"
             size="icon"
             className="h-10 w-10 rounded-full border border-white/10 bg-white/60"
+            disabled
+            aria-label="Notifications unavailable"
           >
             <Bell className="h-4 w-4" />
           </Button>
-          <Button className="h-10 rounded-full bg-[#101513] px-4 text-sm font-medium text-white hover:bg-[#101513]/90">
-            {canManage ? "Invite user" : "Request access"}
+          <Button
+            className="h-10 rounded-full bg-[#101513] px-4 text-sm font-medium text-white hover:bg-[#101513]/90"
+            onClick={() => navigate(primaryAction.href)}
+          >
+            {primaryAction.label}
           </Button>
         </div>
       </div>

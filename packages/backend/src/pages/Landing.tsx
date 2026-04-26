@@ -15,31 +15,31 @@ import { Card, CardContent } from "@/components/ui/card";
 import { roleCatalog } from "@/lib/rbac";
 
 const stats = [
-  { label: "roles supported", value: "12" },
-  { label: "policy checks", value: "48" },
-  { label: "audit events", value: "1.2M" },
+  { label: "role types", value: "12" },
+  { label: "safety checks", value: "48" },
+  { label: "activity records", value: "1.2M" },
 ];
 
 const highlights = [
   {
     icon: Users,
-    title: "Role-scoped access",
-    description: "Every screen, action, and approval step changes with the signed-in role.",
+    title: "The right view for each person",
+    description: "Pages, actions, and requests change based on who is signed in.",
   },
   {
     icon: Shield,
-    title: "Guarded approvals",
-    description: "Privileged actions sit behind explicit review and escalation paths.",
+    title: "Clear approval steps",
+    description: "Sensitive changes are reviewed before they go live.",
   },
   {
     icon: Lock,
-    title: "Least privilege by default",
-    description: "Users only see the navigation, queues, and controls they are allowed to use.",
+    title: "Only what people need",
+    description: "Everyone sees the tools and pages that match their role.",
   },
   {
     icon: ShieldAlert,
-    title: "Audit visibility",
-    description: "Access changes and exception handling stay visible for compliance and review.",
+    title: "Easy to review later",
+    description: "Important changes stay visible in one shared history.",
   },
 ];
 
@@ -55,7 +55,7 @@ export default function LandingPage() {
             <div>
               <p className="text-sm font-semibold tracking-tight">EnovAIt</p>
               <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">
-                RBAC control plane
+                Team workspace
               </p>
             </div>
           </div>
@@ -82,29 +82,29 @@ export default function LandingPage() {
             className="space-y-8"
           >
             <Badge className="rounded-full border border-primary/20 bg-primary/5 px-4 py-1 text-[11px] uppercase tracking-[0.24em] text-primary hover:bg-primary/5">
-              Role-based access for EnovAIt
+              Access and approvals in one place
             </Badge>
             <div className="space-y-5">
               <h1 className="max-w-3xl text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
-                Control who sees what, who approves what, and what gets audited.
+                Help the right people see the right things.
               </h1>
               <p className="max-w-2xl text-lg leading-8 text-muted-foreground">
-                EnovAIt gives owners, admins, managers, and read-only stakeholders a single
-                workspace with role-scoped navigation, approval queues, and audit visibility.
+                EnovAIt gives each person a clear workspace with the pages, requests, and updates that match their role.
               </p>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button asChild className="h-12 rounded-full bg-[#101513] px-6 text-white hover:bg-[#101513]/90">
                 <Link to="/login">
-                  Start with RBAC
+                  Open workspace
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>
               <Button
+                asChild
                 variant="outline"
                 className="h-12 rounded-full border-black/10 bg-white/70 px-6 backdrop-blur"
               >
-                See role matrix
+                <Link to="/login">See how access works</Link>
               </Button>
             </div>
             <div className="grid max-w-xl grid-cols-3 gap-4 pt-4">
@@ -137,7 +137,7 @@ export default function LandingPage() {
                   <span className="h-3 w-3 rounded-full bg-emerald-400" />
                 </div>
                 <div className="rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.24em] text-white/60">
-                  Access snapshot
+                  Quick view
                 </div>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2">
@@ -155,17 +155,17 @@ export default function LandingPage() {
               <div className="mt-4 rounded-3xl border border-white/10 bg-white/5 p-5">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] uppercase tracking-[0.24em] text-white/55">
-                    Role ladder
+                    Who can do what
                   </span>
                   <span className="text-[10px] uppercase tracking-[0.24em] text-[#8ab37c]">
-                    12 profiles
+                    12 roles
                   </span>
                 </div>
                 <div className="mt-4 space-y-3">
                   {[
-                    "Owner can manage every policy and approval",
-                    "Manager sees queues, not secrets",
-                    "Viewer gets read-only access with audit trace",
+                    "Owners can approve the biggest changes",
+                    "Managers can review requests without seeing everything",
+                    "View-only users can check progress without making edits",
                   ].map((item) => (
                     <div
                       key={item}
@@ -231,21 +231,21 @@ export default function LandingPage() {
             {[
               {
                 step: "1",
-                title: "Assign a role",
+                title: "Pick who needs access",
                 description:
-                  "Pick owner, admin, manager, or viewer and the navigation changes immediately.",
+                  "Choose the role that matches the work they need to do.",
               },
               {
                 step: "2",
-                title: "Guard the action",
+                title: "Review the request",
                 description:
-                  "Approve, deny, or escalate access based on the policy attached to the route.",
+                  "Approve, reject, or send it for another look when needed.",
               },
               {
                 step: "3",
-                title: "Trace the decision",
+                title: "Keep a record",
                 description:
-                  "Every privileged action stays visible in the audit path for later review.",
+                  "Important changes stay easy to check again later.",
               },
             ].map((item) => (
               <Card key={item.title} className="border-white/60 bg-white/75 shadow-sm">

@@ -53,7 +53,7 @@ export function AppSidebar() {
           <div>
             <p className="text-sm font-semibold tracking-tight">EnovAIt</p>
             <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">
-              RBAC control plane
+              Team workspace
             </p>
           </div>
         </div>

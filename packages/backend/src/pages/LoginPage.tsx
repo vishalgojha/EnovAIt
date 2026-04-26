@@ -25,8 +25,8 @@ export function LoginPage() {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: "owner@enovait.com",
-      password: "password123",
+      email: "",
+      password: "",
     },
   });
 
@@ -34,10 +34,10 @@ export function LoginPage() {
     try {
       const session = await signIn(data);
       setAuth(session.user, session.tenant, session.token);
-      toast.success("Signed in with RBAC scope");
+      toast.success("Signed in");
       navigate("/dashboard");
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Failed to login. Please check your credentials.";
+      const message = error instanceof Error ? error.message : "We could not sign you in. Please check your details and try again.";
       toast.error(message);
     }
   };
@@ -55,8 +55,7 @@ export function LoginPage() {
               </div>
               <CardTitle className="text-3xl">Welcome to EnovAIt</CardTitle>
               <CardDescription className="text-base leading-7">
-                Sign in to inspect the role ladder, review approvals, and switch between access
-                scopes without losing the audit trail.
+                Sign in to open your workspace, check requests, and see what each role can do.
               </CardDescription>
             </CardHeader>
 
@@ -84,7 +83,7 @@ export function LoginPage() {
               </div>
 
               <Button className="w-full h-11 rounded-full bg-[#101513] text-white hover:bg-[#101513]/90" type="submit" disabled={isSubmitting}>
-                {isSubmitting ? "Signing in..." : "Enter RBAC workspace"}
+                {isSubmitting ? "Signing in..." : "Open workspace"}
               </Button>
             </form>
           </div>
@@ -93,20 +92,19 @@ export function LoginPage() {
             <div className="flex h-full flex-col justify-between gap-8">
               <div>
                 <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-white/45">
-                  Server-backed session
+                  Safe sign-in
                 </p>
-                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Backend-controlled access</h2>
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight">Your access is checked for you</h2>
                 <p className="mt-4 text-sm leading-7 text-white/65">
-                  The backend resolves the user role during sign in and stores it in the authenticated
-                  session. The login form no longer fabricates access locally.
+                  We confirm your role when you sign in so each person sees the right pages, actions, and requests.
                 </p>
               </div>
 
               <div className="space-y-3">
                 {[
-                  "Dashboard and role matrix stay visible to all signed-in users.",
-                  "Approvals and settings remain gated behind policy checks.",
-                  "Audit and reporting surfaces keep a full access trail.",
+                  "Everyone gets a view that matches their role.",
+                  "Requests and settings stay limited to the right people.",
+                  "A clear history is kept for later review.",
                 ].map((item) => (
                   <div key={item} className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/75">
                     {item}
@@ -115,7 +113,7 @@ export function LoginPage() {
               </div>
 
               <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
-                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Recognized roles</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-white/45">Common roles</p>
                 <div className="mt-4 grid gap-3 sm:grid-cols-3">
                   {roleCatalog.slice(0, 3).map((item) => (
                     <div key={item.label} className="rounded-2xl border border-white/10 bg-black/20 p-3">

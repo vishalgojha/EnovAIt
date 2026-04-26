@@ -14,36 +14,36 @@ export interface NavSection {
 
 export const sidebarSections: NavSection[] = [
   {
-    label: "Overview",
+    label: "Main",
     items: [
-      { label: "Dashboard", href: "/dashboard", permission: permissions.dashboard },
-      { label: "Roles", href: "/roles", permission: permissions.rbacRead },
-      { label: "Approvals", href: "/approvals", permission: permissions.approvals },
-      { label: "Audit", href: "/audit", permission: permissions.audit },
+      { label: "Home", href: "/dashboard", permission: permissions.dashboard },
+      { label: "People & Access", href: "/roles", permission: permissions.rbacRead },
+      { label: "Requests", href: "/approvals", permission: permissions.approvals },
+      { label: "Activity History", href: "/audit", permission: permissions.audit },
     ],
   },
   {
-    label: "Operations",
+    label: "Daily Work",
     items: [
-      { label: "Assistant", href: "/assistant", permission: permissions.assistant },
-      { label: "Channels", href: "/channels", permission: permissions.channels },
-      { label: "Data", href: "/data", permission: permissions.data },
+      { label: "AI Chat", href: "/assistant", permission: permissions.assistant },
+      { label: "Messages", href: "/channels", permission: permissions.channels },
+      { label: "Records", href: "/data", permission: permissions.data },
       { label: "Reports", href: "/reports", permission: permissions.reports },
-      { label: "Workflows", href: "/workflows", permission: permissions.workflows },
+      { label: "Steps & Follow-ups", href: "/workflows", permission: permissions.workflows },
     ],
   },
   {
-    label: "Administration",
+    label: "Setup",
     items: [
-      { label: "Integrations", href: "/integrations", permission: permissions.integrations },
-      { label: "Settings", href: "/settings", permission: permissions.settings },
+      { label: "Connected Apps", href: "/integrations", permission: permissions.integrations },
+      { label: "Workspace Settings", href: "/settings", permission: permissions.settings },
     ],
   },
 ];
 
 export const headerShortcuts: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", permission: permissions.dashboard },
-  { label: "Roles", href: "/roles", permission: permissions.rbacRead },
-  { label: "Approvals", href: "/approvals", permission: permissions.approvals },
-  { label: "Channels", href: "/channels", permission: permissions.channels },
+  { label: "Home", href: "/dashboard", permission: permissions.dashboard },
+  { label: "People & Access", href: "/roles", permission: permissions.rbacRead },
+  { label: "Requests", href: "/approvals", permission: permissions.approvals },
+  { label: "AI Chat", href: "/assistant", permission: permissions.assistant },
 ];

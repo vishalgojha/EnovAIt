@@ -57,7 +57,7 @@ function PlaceholderPage({
     <div className="grid min-h-[55vh] place-items-center">
       <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-white/80 p-10 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
         <div className="mb-6 inline-flex rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-          RBAC workspace
+          Workspace
         </div>
         <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {title}
@@ -73,9 +73,9 @@ function SessionRestoringScreen() {
     <div className="grid min-h-screen place-items-center bg-[radial-gradient(circle_at_top,rgba(74,103,65,0.08),transparent_30%),linear-gradient(180deg,#fbfbf8_0%,#f3f5f1_100%)] p-4">
       <Card className="w-full max-w-xl border-white/60 bg-white/85 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
         <CardHeader>
-          <CardTitle className="text-3xl tracking-tight">Restoring session</CardTitle>
+          <CardTitle className="text-3xl tracking-tight">Getting things ready</CardTitle>
           <CardDescription className="text-base leading-7">
-            Verifying the saved token with the backend and reloading the authoritative role and tenant.
+            We are checking your saved sign-in and loading the right workspace for you.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -83,7 +83,7 @@ function SessionRestoringScreen() {
             <div className="h-full w-1/2 animate-pulse rounded-full bg-[#4A6741]" />
           </div>
           <p className="text-sm leading-7 text-muted-foreground">
-            This prevents the app from briefly rendering stale local access before the server response arrives.
+            This helps us show the right pages and actions as soon as the app opens.
           </p>
         </CardContent>
       </Card>
@@ -182,8 +182,8 @@ export default function App() {
                 path="/audit"
                 element={
                   <PlaceholderPage
-                    title="Audit Trail"
-                    description="Who approved what, when they approved it, and which permissions were touched."
+                    title="Activity History"
+                    description="See who made changes and when. This area is coming soon."
                   />
                 }
               />
@@ -192,6 +192,14 @@ export default function App() {
           <Route
             path="/assistant"
             element={<RedirectWithPermission path="/assistant" element={<AssistantPage />} />}
+          />
+          <Route
+            path="/chat"
+            element={<RedirectWithPermission path="/assistant" element={<Navigate to="/assistant" replace />} />}
+          />
+          <Route
+            path="/ai-chat"
+            element={<RedirectWithPermission path="/assistant" element={<Navigate to="/assistant" replace />} />}
           />
           <Route
             path="/channels"
@@ -204,8 +212,8 @@ export default function App() {
                 path="/data"
                 element={
                   <PlaceholderPage
-                    title="Data Access"
-                    description="Record-level visibility, evidence links, and scope filters will live here."
+                    title="Records"
+                    description="Browse saved records, attached files, and updates in one place. This area is coming soon."
                   />
                 }
               />
@@ -219,7 +227,7 @@ export default function App() {
                 element={
                   <PlaceholderPage
                     title="Reports"
-                    description="Leadership packs, role-scoped exports, and audit summaries will land here."
+                    description="Open shared summaries and ready-made updates here. This area is coming soon."
                   />
                 }
               />
@@ -232,8 +240,8 @@ export default function App() {
                 path="/workflows"
                 element={
                   <PlaceholderPage
-                    title="Workflow Rules"
-                    description="Approval chains, escalation paths, and exception handling are managed here."
+                    title="Steps & Follow-ups"
+                    description="This is where review steps and follow-up rules will appear. This area is coming soon."
                   />
                 }
               />
@@ -246,8 +254,8 @@ export default function App() {
                 path="/integrations"
                 element={
                   <PlaceholderPage
-                    title="Integrations"
-                    description="Connect identity, ERP, messaging, and storage systems behind role controls."
+                    title="Connected Apps"
+                    description="Connect messaging, storage, and business tools here. This area is coming soon."
                   />
                 }
               />
@@ -260,8 +268,8 @@ export default function App() {
                 path="/settings"
                 element={
                   <PlaceholderPage
-                    title="Settings"
-                    description="Tenant configuration, policy defaults, and security posture settings live here."
+                    title="Workspace Settings"
+                    description="Choose workspace preferences and defaults here. This area is coming soon."
                   />
                 }
               />

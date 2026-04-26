@@ -1,4 +1,5 @@
-import { createContext, createPortal, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { ArrowLeft, CheckCircle2, Compass, X } from "lucide-react";

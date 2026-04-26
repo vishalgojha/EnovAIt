@@ -1,4 +1,5 @@
 import { CheckCircle2, FileLock2, ShieldAlert, Workflow } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -6,31 +7,32 @@ import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 
 const policyChecks = [
-  { name: "MFA required for privileged roles", progress: 100, status: "Ready" },
-  { name: "Approval chain documented", progress: 88, status: "In review" },
-  { name: "Quarterly role recertification", progress: 72, status: "Needs action" },
-  { name: "Service account ownership", progress: 54, status: "Needs action" },
+  { name: "Two-step sign-in is required for high-access roles", progress: 100, status: "Ready" },
+  { name: "Each request has a clear approval path", progress: 88, status: "Being updated" },
+  { name: "Access is reviewed on a regular schedule", progress: 72, status: "Needs attention" },
+  { name: "Every shared account has a clear owner", progress: 54, status: "Needs attention" },
 ];
 
 const approvals = [
-  "Owner approval required for new admin roles",
-  "Manager review required for elevated workflows",
-  "Viewer requests auto-expire after 30 days",
+  "New admin access needs owner approval",
+  "Sensitive changes need manager review",
+  "View-only access ends after 30 days",
 ];
 
 export default function ApprovalsPage() {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-6">
       <div>
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-          Policies and approvals
+          Requests
         </p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Guardrails for access changes
+          Reviews before access changes go live
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-          This page captures the policy posture that sits behind RBAC changes, privileged access,
-          and review queues.
+          These checks help the team make safe changes, route requests to the right people, and keep a clear record.
         </p>
       </div>
 
@@ -38,7 +40,7 @@ export default function ApprovalsPage() {
         <Card className="border-white/60 bg-white/80 shadow-sm">
           <CardContent className="p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-              Policy coverage
+              Checks in place
             </p>
             <div className="mt-4 text-3xl font-semibold tracking-tight">84%</div>
             <Progress value={84} className="mt-4 h-2" />
@@ -48,7 +50,7 @@ export default function ApprovalsPage() {
         <Card className="border-white/60 bg-white/80 shadow-sm">
           <CardContent className="p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-muted-foreground">
-              Pending approvals
+              Waiting for review
             </p>
             <div className="mt-4 text-3xl font-semibold tracking-tight">07</div>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -65,7 +67,7 @@ export default function ApprovalsPage() {
         <Card className="border-white/60 bg-[#101513] text-white shadow-sm">
           <CardContent className="p-5">
             <p className="text-xs font-semibold uppercase tracking-[0.24em] text-white/50">
-              Audit posture
+              Record keeping
             </p>
             <div className="mt-4 text-3xl font-semibold tracking-tight">Good</div>
             <div className="mt-4 flex items-center gap-2">
@@ -73,7 +75,7 @@ export default function ApprovalsPage() {
                 <FileLock2 className="h-4 w-4 text-[#8ab37c]" />
               </div>
               <span className="text-sm text-white/65">
-                Privileged actions are traceable and reviewable
+                Important changes stay easy to review later
               </span>
             </div>
           </CardContent>
@@ -83,9 +85,9 @@ export default function ApprovalsPage() {
       <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
         <Card className="border-white/60 bg-white/80 shadow-sm">
           <CardHeader className="border-b border-border/60">
-            <CardTitle className="text-xl tracking-tight">Policy checklist</CardTitle>
+            <CardTitle className="text-xl tracking-tight">Before you approve</CardTitle>
             <CardDescription>
-              The controls that should be true before a role change is approved.
+              Use these checks before you give someone new access or make a big change.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 p-5">
@@ -99,7 +101,7 @@ export default function ApprovalsPage() {
                     <div>
                       <div className="font-medium tracking-tight">{item.name}</div>
                       <div className="mt-1 text-[11px] uppercase tracking-[0.2em] text-muted-foreground">
-                        RBAC control
+                        Safety check
                       </div>
                     </div>
                   </div>
@@ -128,9 +130,9 @@ export default function ApprovalsPage() {
 
         <Card className="border-white/60 bg-[#101513] text-white shadow-sm">
           <CardHeader className="border-b border-white/10">
-            <CardTitle className="text-xl tracking-tight">Approval rules</CardTitle>
+            <CardTitle className="text-xl tracking-tight">How requests are handled</CardTitle>
             <CardDescription className="text-white/55">
-              The default approval rules that gate changes to access.
+              The usual path requests follow before anything changes.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
@@ -140,8 +142,11 @@ export default function ApprovalsPage() {
                 <span className="text-sm text-white/75">{item}</span>
               </div>
             ))}
-            <Button className="h-11 rounded-full bg-[#4A6741] px-5 text-white hover:bg-[#4A6741]/90">
-              Review access policy
+            <Button
+              className="h-11 rounded-full bg-[#4A6741] px-5 text-white hover:bg-[#4A6741]/90"
+              onClick={() => navigate("/roles")}
+            >
+              See access roles
             </Button>
           </CardContent>
         </Card>
@@ -149,9 +154,9 @@ export default function ApprovalsPage() {
 
       <Card className="border-white/60 bg-white/80 shadow-sm">
         <CardHeader className="border-b border-border/60">
-          <CardTitle className="text-xl tracking-tight">Escalation signals</CardTitle>
+          <CardTitle className="text-xl tracking-tight">Needs extra review</CardTitle>
           <CardDescription>
-            Items that need a human reviewer before a permission change can be finalized.
+            These are the kinds of requests that should be checked by a person before they move forward.
           </CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 p-5 md:grid-cols-3">

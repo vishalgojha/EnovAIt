@@ -11,9 +11,9 @@ type Message = {
 };
 
 const suggestions = [
-  "Who can approve a new admin role?",
-  "Summarize the current access risk posture.",
-  "What should I review before granting viewer access?",
+  "Who can approve a new team admin?",
+  "Give me a quick summary of current access issues.",
+  "What should I check before giving someone view-only access?",
 ];
 
 function generateReply(prompt: string) {
@@ -39,7 +39,7 @@ export default function AssistantPage() {
     {
       role: "assistant",
       content:
-        "I am the RBAC assistant. Ask me about roles, approvals, scope limits, or access reviews.",
+        "Hi, I am AI Chat. I can explain who can do what, help with requests, and point out what needs attention.",
     },
   ]);
   const [input, setInput] = useState("");
@@ -68,27 +68,26 @@ export default function AssistantPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            Access assistant
+            AI Chat
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Ask about roles, approvals, and scopes
+            Ask a question in plain language
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            Use this surface to draft access requests, explain why a role is blocked, or summarize
-            the current permission model.
+            Use AI Chat to understand roles, requests, and next steps without digging through every page yourself.
           </p>
         </div>
         <div className="inline-flex items-center gap-2 rounded-full border border-primary/15 bg-primary/5 px-4 py-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
           <Sparkles className="h-3.5 w-3.5" />
-          Context aware
+          Ready to help
         </div>
       </div>
 
       <Card className="overflow-hidden border-white/60 bg-white/80 shadow-sm">
         <CardHeader className="border-b border-border/60">
-          <CardTitle className="text-xl tracking-tight">Conversation</CardTitle>
+          <CardTitle className="text-xl tracking-tight">Chat</CardTitle>
           <CardDescription>
-            Ask for approval guidance, a risk summary, or a role explanation.
+            Ask who can do something, why a request is waiting, or what to review next.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-5 p-5">
@@ -148,7 +147,7 @@ export default function AssistantPage() {
                   send(input);
                 }
               }}
-              placeholder="Ask about role scope, approvals, or access risk..."
+              placeholder="Ask about people, requests, or next steps..."
               className="h-12 rounded-full border-white/10 bg-white/80 pl-4 pr-28 shadow-sm"
             />
             <Button
@@ -164,9 +163,9 @@ export default function AssistantPage() {
 
       <div className="grid gap-4 md:grid-cols-3">
         {[
-          "Owner approvals for privileged changes",
-          "Manager review for scoped requests",
-          "Viewer access for audit-only stakeholders",
+          "Owner approval for high-access changes",
+          "Manager review for sensitive requests",
+          "View-only access for read-only work",
         ].map((item) => (
           <Card key={item} className="border-white/60 bg-white/80 shadow-sm">
             <CardContent className="flex items-center gap-3 p-5">

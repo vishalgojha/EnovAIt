@@ -17,11 +17,12 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
-import { getRoleLabel, getRolePermissions, getRoleSummary, roleCatalog } from "@/lib/rbac";
+import { getRoleLabel, getRolePermissions, getRoleSummary, hasPermission, permissions, roleCatalog } from "@/lib/rbac";
 import { useAuthStore } from "@/lib/store/auth";
 import { useGuidedTour } from "@/components/tour/GuidedTour";
 
@@ -37,23 +38,24 @@ const accessData = [
 
 const queue = [
   {
-    title: "Owner approval pending",
-    detail: "A privileged integration update is waiting for owner sign-off.",
+    title: "Waiting for owner sign-off",
+    detail: "A change to a connected app is waiting for final approval.",
     status: "critical",
   },
   {
-    title: "Manager review requested",
-    detail: "A role change for the finance team moved into the approval queue.",
+    title: "Manager review needed",
+    detail: "A team access change was sent to the requests list.",
     status: "warning",
   },
   {
-    title: "Viewer request completed",
-    detail: "Read-only access was granted after policy validation and log capture.",
+    title: "View-only access approved",
+    detail: "A request was completed and added to the activity history.",
     status: "resolved",
   },
 ];
 
 export default function DashboardPage() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { startTour } = useGuidedTour();
 
@@ -61,31 +63,32 @@ export default function DashboardPage() {
   const permissionCount = getRolePermissions(role).length;
   const roleLabel = getRoleLabel(role);
   const roleSummary = getRoleSummary(role);
+  const canReviewApprovals = hasPermission(role, permissions.approvals);
 
   const stats = [
     {
-      title: "Accessible permissions",
+      title: "What you can open",
       value: String(permissionCount).padStart(2, "0"),
       change: role ? roleLabel : "Guest",
       trend: "up" as const,
       icon: Shield,
     },
     {
-      title: "Open approvals",
+      title: "Waiting for review",
       value: "07",
       change: "-2 today",
       trend: "down" as const,
       icon: Clock,
     },
     {
-      title: "Privileged roles",
+      title: "High-access roles",
       value: "04",
       change: "+1 this week",
       trend: "up" as const,
       icon: Users,
     },
     {
-      title: "Policy checks passed",
+      title: "Checks passed",
       value: "96%",
       change: "+4%",
       trend: "up" as const,
@@ -98,13 +101,14 @@ export default function DashboardPage() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div data-tour-id="dashboard-hero">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-            RBAC dashboard
+            Today
           </p>
           <h1 className="mt-2 text-3xl font-semibold tracking-tight sm:text-4xl">
-            Access control at a glance
+            What needs your attention
           </h1>
           <p className="mt-2 max-w-2xl text-sm leading-7 text-muted-foreground">
-            {roleSummary} The current user is <span className="font-medium text-foreground">{roleLabel}</span>.
+            You are signed in as <span className="font-medium text-foreground">{roleLabel}</span>.{" "}
+            {roleSummary}
           </p>
         </div>
         <div className="flex items-center gap-2" data-tour-id="dashboard-actions">
@@ -114,15 +118,23 @@ export default function DashboardPage() {
             onClick={startTour}
           >
             <Compass className="mr-2 h-4 w-4 text-[#4A6741]" />
-            Take tour
+            Quick tour
           </Button>
-          <Button variant="outline" className="h-10 rounded-full border-white/10 bg-white/70">
+          <Badge
+            variant="outline"
+            className="h-10 rounded-full border-white/10 bg-white/70 px-4 text-sm font-medium text-foreground"
+          >
             <Clock className="mr-2 h-4 w-4" />
-            Last 7 days
-          </Button>
-          <Button className="h-10 rounded-full bg-[#101513] px-4 text-white hover:bg-[#101513]/90">
-            Review approvals
-          </Button>
+            This week
+          </Badge>
+          {canReviewApprovals ? (
+            <Button
+              className="h-10 rounded-full bg-[#101513] px-4 text-white hover:bg-[#101513]/90"
+              onClick={() => navigate("/approvals")}
+            >
+              Open requests
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -160,9 +172,9 @@ export default function DashboardPage() {
       <div className="grid gap-4 xl:grid-cols-[1.5fr_0.9fr]">
         <Card className="border-white/60 bg-white/80 shadow-sm" data-tour-id="dashboard-chart">
           <CardHeader className="border-b border-border/60">
-            <CardTitle className="text-xl tracking-tight">Approval flow</CardTitle>
+            <CardTitle className="text-xl tracking-tight">Requests over time</CardTitle>
             <CardDescription>
-              Daily approvals and escalations across the RBAC control plane.
+              A simple view of how many requests were handled each day.
             </CardDescription>
           </CardHeader>
           <CardContent className="h-[340px] p-4 sm:p-6">
@@ -199,9 +211,9 @@ export default function DashboardPage() {
 
         <Card className="border-white/60 bg-[#101513] text-white shadow-sm" data-tour-id="dashboard-ladder">
           <CardHeader className="border-b border-white/10">
-            <CardTitle className="text-xl tracking-tight">Role ladder</CardTitle>
+            <CardTitle className="text-xl tracking-tight">Who can do what</CardTitle>
             <CardDescription className="text-white/55">
-              A quick view of the access tiers available in this tenant.
+              A quick guide to the access levels in this workspace.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 p-5">
@@ -227,8 +239,8 @@ export default function DashboardPage() {
 
       <Card className="border-white/60 bg-white/80 shadow-sm" data-tour-id="dashboard-activity">
         <CardHeader className="border-b border-border/60">
-          <CardTitle className="text-xl tracking-tight">Recent access activity</CardTitle>
-          <CardDescription>Who touched what, and what the system did with it.</CardDescription>
+          <CardTitle className="text-xl tracking-tight">Recent updates</CardTitle>
+          <CardDescription>The latest request and access changes across the team.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 p-5 md:grid-cols-3">
           {queue.map((item) => (

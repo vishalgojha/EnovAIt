@@ -4,11 +4,9 @@ import {
   Terminal, 
   Activity, 
   ShieldCheck, 
-  Zap, 
-  Code,
+  CheckCircle2,
   Play,
   Copy,
-  CheckCircle2,
   RefreshCw
 } from 'lucide-react';
 import { 
@@ -39,6 +37,8 @@ import { toast } from 'sonner';
 
 export function ChannelsConsolePage() {
   const [selectedChannel, setSelectedChannel] = React.useState('whatsapp_official');
+  const [recipient, setRecipient] = React.useState('');
+  const [message, setMessage] = React.useState('Test message from EnovAIt Console');
   const [testPayload, setTestPayload] = React.useState(JSON.stringify({
     event: 'message.received',
     timestamp: new Date().toISOString(),
@@ -51,18 +51,27 @@ export function ChannelsConsolePage() {
 
   const [sending, setSending] = React.useState(false);
 
+  const handleValidatePayload = () => {
+    try {
+      JSON.parse(testPayload);
+      toast.success('This example looks good');
+    } catch {
+      toast.error('Something in this example needs fixing');
+    }
+  };
+
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     setSending(true);
     try {
       await channelApi.sendMessage({
         channel: selectedChannel,
-        to: '+1234567890',
-        content: { text: 'Test message from EnovAIt Console' }
+        to: recipient,
+        message,
       });
-      toast.success('Test message sent successfully');
+      toast.success('Message sent for delivery');
     } catch (error) {
-      toast.error('Failed to send test message');
+      toast.error("Couldn't send the message");
     } finally {
       setSending(false);
     }
@@ -72,12 +81,14 @@ export function ChannelsConsolePage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Channels Console</h1>
-          <p className="text-muted-foreground">Monitor channel health and simulate incoming webhooks.</p>
+          <h1 className="text-3xl font-bold tracking-tight">Messages & Connections</h1>
+          <p className="text-muted-foreground">
+            Check which services are working, preview an incoming update, or send a quick test message.
+          </p>
         </div>
         <Badge variant="outline" className="h-8 px-4 gap-2">
           <Activity className="h-3 w-3 text-green-500" />
-          System Status: Operational
+          Messaging services are available
         </Badge>
       </div>
 
@@ -85,8 +96,8 @@ export function ChannelsConsolePage() {
         <div className="lg:col-span-2 space-y-6">
           <Tabs defaultValue="simulator">
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="simulator">Webhook Simulator</TabsTrigger>
-              <TabsTrigger value="test-send">Send Test Message</TabsTrigger>
+              <TabsTrigger value="simulator">Preview Incoming Message</TabsTrigger>
+              <TabsTrigger value="test-send">Send Sample Message</TabsTrigger>
             </TabsList>
             
             <TabsContent value="simulator" className="space-y-4 pt-4">
@@ -94,49 +105,49 @@ export function ChannelsConsolePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Terminal className="h-5 w-5" />
-                    Payload Simulator
+                    Incoming Message Preview
                   </CardTitle>
                   <CardDescription>
-                    Simulate an incoming webhook from a provider to test your workflow rules.
+                    Review a sample message before you connect a live service.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label>Target Channel</Label>
+                      <Label>Service</Label>
                       <Select value={selectedChannel} onValueChange={setSelectedChannel}>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select channel" />
+                          <SelectValue placeholder="Choose service" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="whatsapp_official">WhatsApp Official</SelectItem>
+                          <SelectItem value="whatsapp_official">WhatsApp Business</SelectItem>
                           <SelectItem value="slack">Slack</SelectItem>
                           <SelectItem value="email">Email</SelectItem>
-                          <SelectItem value="sms">SMS Gateway</SelectItem>
+                          <SelectItem value="sms">SMS</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-2">
-                      <Label>Event Type</Label>
+                      <Label>Update Type</Label>
                       <Select defaultValue="message.received">
                         <SelectTrigger>
-                          <SelectValue placeholder="Select event" />
+                          <SelectValue placeholder="Choose update type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="message.received">Message Received</SelectItem>
-                          <SelectItem value="message.delivered">Message Delivered</SelectItem>
-                          <SelectItem value="user.subscribed">User Subscribed</SelectItem>
-                          <SelectItem value="payment.success">Payment Success</SelectItem>
+                          <SelectItem value="message.received">New message received</SelectItem>
+                          <SelectItem value="message.delivered">Message delivered</SelectItem>
+                          <SelectItem value="user.subscribed">New contact added</SelectItem>
+                          <SelectItem value="payment.success">Payment confirmed</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <Label>JSON Payload</Label>
+                      <Label>Message Example</Label>
                       <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => {
                         navigator.clipboard.writeText(testPayload);
-                        toast.success('Payload copied to clipboard');
+                        toast.success('Example copied');
                       }}>
                         <Copy className="mr-2 h-3 w-3" />
                         Copy
@@ -152,11 +163,11 @@ export function ChannelsConsolePage() {
                 <CardFooter className="justify-between border-t bg-muted/20 p-4">
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <ShieldCheck className="h-3 w-3" />
-                    Payload will be routed through the tenant's sandbox.
+                    This check stays on this screen and does not contact an outside service.
                   </p>
-                  <Button onClick={() => toast.success('Simulation started')}>
+                  <Button onClick={handleValidatePayload}>
                     <Play className="mr-2 h-4 w-4" />
-                    Run Simulation
+                    Check Example
                   </Button>
                 </CardFooter>
               </Card>
@@ -167,21 +178,31 @@ export function ChannelsConsolePage() {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Send className="h-5 w-5" />
-                    Outbound Test
+                    Send a Sample Message
                   </CardTitle>
                   <CardDescription>
-                    Send a real message through a configured channel to verify connectivity.
+                    Send a real message through one of your connected services to make sure it arrives.
                   </CardDescription>
                 </CardHeader>
                 <form onSubmit={handleSendMessage}>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label>Recipient (Phone/Email/ID)</Label>
-                      <Input placeholder="+1234567890" required />
+                      <Label>Send To</Label>
+                      <Input
+                        placeholder="Enter a phone number, email, or contact ID"
+                        required
+                        value={recipient}
+                        onChange={(e) => setRecipient(e.target.value)}
+                      />
                     </div>
                     <div className="space-y-2">
-                      <Label>Message Content</Label>
-                      <Textarea placeholder="Type your test message here..." required />
+                      <Label>Message</Label>
+                      <Textarea
+                        placeholder="Write the message you want to send..."
+                        required
+                        value={message}
+                        onChange={(e) => setMessage(e.target.value)}
+                      />
                     </div>
                   </CardContent>
                   <CardFooter className="border-t bg-muted/20 p-4">
@@ -189,12 +210,12 @@ export function ChannelsConsolePage() {
                       {sending ? (
                         <>
                           <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-                          Sending...
+                          Sending message...
                         </>
                       ) : (
                         <>
                           <Send className="mr-2 h-4 w-4" />
-                          Send Test Message
+                          Send Sample Message
                         </>
                       )}
                     </Button>
@@ -208,14 +229,14 @@ export function ChannelsConsolePage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Channel Health</CardTitle>
+              <CardTitle className="text-sm font-medium">Connected Services</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               {[
-                { name: 'WhatsApp', health: 98, status: 'Healthy' },
-                { name: 'Slack', health: 100, status: 'Healthy' },
-                { name: 'Email', health: 85, status: 'Degraded' },
-                { name: 'SMS', health: 95, status: 'Healthy' },
+                { name: 'WhatsApp', health: 98, status: 'Working well' },
+                { name: 'Slack', health: 100, status: 'Working well' },
+                { name: 'Email', health: 85, status: 'Needs attention' },
+                { name: 'SMS', health: 95, status: 'Working well' },
               ].map((channel) => (
                 <div key={channel.name} className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
@@ -233,28 +254,41 @@ export function ChannelsConsolePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm font-medium">Live Traffic</CardTitle>
+              <CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="flex items-start gap-3 text-xs border-b pb-3 last:border-0 last:pb-0">
+                {[
+                  {
+                    title: 'WhatsApp message received',
+                    detail: 'Added to your incoming message flow',
+                    time: 'Just now',
+                  },
+                  {
+                    title: 'Slack alert delivered',
+                    detail: 'Sent successfully to your workspace',
+                    time: '2 minutes ago',
+                  },
+                  {
+                    title: 'Email update sent',
+                    detail: 'Delivered to the selected reviewer',
+                    time: '5 minutes ago',
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex items-start gap-3 text-xs border-b pb-3 last:border-0 last:pb-0">
                     <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center text-primary shrink-0">
-                      <Code className="h-4 w-4" />
+                      <CheckCircle2 className="h-4 w-4" />
                     </div>
                     <div className="flex flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold">POST</span>
-                        <span className="text-muted-foreground">/webhooks/whatsapp</span>
-                      </div>
-                      <span className="text-muted-foreground font-mono">200 OK - 45ms</span>
-                      <span className="text-[10px] text-muted-foreground">Just now</span>
+                      <span className="font-medium">{item.title}</span>
+                      <span className="text-muted-foreground">{item.detail}</span>
+                      <span className="text-[10px] text-muted-foreground">{item.time}</span>
                     </div>
                   </div>
                 ))}
               </div>
-              <Button variant="ghost" className="w-full mt-4 text-xs" size="sm">
-                View Full Logs
+              <Button variant="ghost" className="w-full mt-4 text-xs" size="sm" disabled>
+                View Activity History
               </Button>
             </CardContent>
           </Card>
