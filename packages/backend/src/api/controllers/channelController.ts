@@ -106,11 +106,17 @@ export const channelController = {
     const payload = WhatsAppSendRequestSchema.parse(req.body);
     const { auth } = getRequestContext(req);
 
-    const channel = payload.provider === "official" ? "whatsapp_official" : "whatsapp_baileys";
+    const channel =
+      payload.provider === "official"
+        ? "whatsapp_official"
+        : payload.provider === "evolution"
+          ? "whatsapp_evolution"
+          : "whatsapp_baileys";
     const result = await channelRegistry.send(channel, {
       to: payload.to,
       message: payload.message,
-      metadata: {}
+      metadata: {},
+      orgId: auth.orgId
     });
 
     res.status(200).json({
@@ -123,18 +129,21 @@ export const channelController = {
     });
   },
 
-  async getBaileysStatus(_req: Request, res: Response) {
-    const status = await whatsappBaileysService.getStatus();
+  async getBaileysStatus(req: Request, res: Response) {
+    const { auth } = getRequestContext(req);
+    const status = await whatsappBaileysService.getStatus(auth.orgId);
     res.status(200).json({ data: status });
   },
 
-  async getBaileysQr(_req: Request, res: Response) {
-    const qrData = await whatsappBaileysService.getQrCode();
+  async getBaileysQr(req: Request, res: Response) {
+    const { auth } = getRequestContext(req);
+    const qrData = await whatsappBaileysService.getQrCode(auth.orgId);
     res.status(200).json({ data: qrData });
   },
 
-  async disconnectBaileys(_req: Request, res: Response) {
-    const result = await whatsappBaileysService.disconnect();
+  async disconnectBaileys(req: Request, res: Response) {
+    const { auth } = getRequestContext(req);
+    const result = await whatsappBaileysService.disconnect(auth.orgId);
     res.status(200).json({ data: result });
   },
 

@@ -40,6 +40,15 @@ interface IntegrationRecord {
   updated_at?: string | null;
 }
 
+interface OrganizationSettingsRecord {
+  id: string;
+  name: string;
+  slug: string;
+  settings: Record<string, unknown>;
+  is_active?: boolean;
+  updated_at?: string | null;
+}
+
 interface DataRecordListEnvelope {
   data: DataRecord[];
   pagination: {
@@ -145,6 +154,11 @@ export const adminApi = {
     normalizeIntegration(
       (await api.put<ApiEnvelope<IntegrationRecord>>(`/admin/integrations/${id}`, { is_active: false })).data
     ),
+
+  getSettings: async () =>
+    (await api.get<ApiEnvelope<OrganizationSettingsRecord>>("/admin/settings")).data,
+  updateSettings: async (settings: Record<string, unknown>) =>
+    (await api.put<ApiEnvelope<OrganizationSettingsRecord>>("/admin/settings", { settings })).data,
 };
 
 export const dataApi = {

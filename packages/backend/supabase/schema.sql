@@ -299,6 +299,39 @@ create table if not exists public.integrations (
   version integer not null default 1
 );
 
+create table if not exists public.whatsapp_sessions (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.organizations(id) on delete cascade,
+  label text not null,
+  owner_name text,
+  phone_number text,
+  status text not null check (status in ('connecting', 'connected', 'disconnected')),
+  last_sync timestamptz not null default timezone('utc', now()),
+  created_by uuid references auth.users(id),
+  updated_by uuid references auth.users(id),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  version integer not null default 1,
+  unique(tenant_id, label)
+);
+
+create table if not exists public.whatsapp_messages (
+  id uuid primary key default gen_random_uuid(),
+  tenant_id uuid not null references public.organizations(id) on delete cascade,
+  label text not null,
+  remote_jid text not null,
+  text text not null,
+  sender text,
+  timestamp timestamptz not null default timezone('utc', now()),
+  from_me boolean not null default false,
+  raw_message jsonb not null default '{}'::jsonb,
+  created_by uuid references auth.users(id),
+  updated_by uuid references auth.users(id),
+  created_at timestamptz not null default timezone('utc', now()),
+  updated_at timestamptz not null default timezone('utc', now()),
+  version integer not null default 1
+);
+
 create table if not exists public.notifications (
   id uuid primary key default gen_random_uuid(),
   org_id uuid not null references public.organizations(id) on delete cascade,
@@ -353,6 +386,9 @@ create index if not exists idx_workflow_rules_event on public.workflow_rules(org
 create index if not exists idx_workflow_instances_record on public.workflow_instances(org_id, data_record_id, state);
 create index if not exists idx_reports_org_type on public.reports(org_id, report_type, generated_at desc);
 create index if not exists idx_integrations_org on public.integrations(org_id, integration_type, is_active);
+create index if not exists idx_whatsapp_sessions_tenant_status on public.whatsapp_sessions(tenant_id, status, last_sync desc);
+create index if not exists idx_whatsapp_messages_tenant_created on public.whatsapp_messages(tenant_id, created_at desc);
+create index if not exists idx_whatsapp_messages_raw_gin on public.whatsapp_messages using gin(raw_message);
 create index if not exists idx_notifications_org_user on public.notifications(org_id, user_id, status);
 create index if not exists idx_notifications_pending_schedule on public.notifications(status, scheduled_at, created_at);
 create index if not exists idx_workflow_events_pending on public.workflow_events(org_id, event_type, processed_at);
@@ -403,6 +439,14 @@ for each row execute function public.tg_audit_fields();
 
 drop trigger if exists trg_audit_integrations on public.integrations;
 create trigger trg_audit_integrations before insert or update on public.integrations
+for each row execute function public.tg_audit_fields();
+
+drop trigger if exists trg_audit_whatsapp_sessions on public.whatsapp_sessions;
+create trigger trg_audit_whatsapp_sessions before insert or update on public.whatsapp_sessions
+for each row execute function public.tg_audit_fields();
+
+drop trigger if exists trg_audit_whatsapp_messages on public.whatsapp_messages;
+create trigger trg_audit_whatsapp_messages before insert or update on public.whatsapp_messages
 for each row execute function public.tg_audit_fields();
 
 drop trigger if exists trg_audit_notifications on public.notifications;
@@ -545,6 +589,8 @@ alter table public.workflow_rules enable row level security;
 alter table public.workflow_instances enable row level security;
 alter table public.reports enable row level security;
 alter table public.integrations enable row level security;
+alter table public.whatsapp_sessions enable row level security;
+alter table public.whatsapp_messages enable row level security;
 alter table public.notifications enable row level security;
 alter table public.workflow_events enable row level security;
 
@@ -626,6 +672,16 @@ create policy integrations_org_access on public.integrations
 for all using (org_id = public.current_org_id())
 with check (org_id = public.current_org_id());
 
+drop policy if exists whatsapp_sessions_org_access on public.whatsapp_sessions;
+create policy whatsapp_sessions_org_access on public.whatsapp_sessions
+for all using (tenant_id = public.current_org_id())
+with check (tenant_id = public.current_org_id());
+
+drop policy if exists whatsapp_messages_org_access on public.whatsapp_messages;
+create policy whatsapp_messages_org_access on public.whatsapp_messages
+for all using (tenant_id = public.current_org_id())
+with check (tenant_id = public.current_org_id());
+
 drop policy if exists notifications_org_access on public.notifications;
 create policy notifications_org_access on public.notifications
 for all using (org_id = public.current_org_id())
@@ -638,6 +694,8 @@ with check (org_id = public.current_org_id());
 
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on all tables in schema public to authenticated;
+grant select, insert, update, delete on public.whatsapp_sessions to authenticated;
+grant select, insert, update, delete on public.whatsapp_messages to authenticated;
 
 
 

@@ -4,6 +4,7 @@ import { z } from "zod";
 export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("production"),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
+  TRUST_PROXY: z.string().default("0"),
 
   // Supabase
   SUPABASE_URL: z.string().url().default("https://placeholder.supabase.co"),
@@ -41,6 +42,8 @@ export const envSchema = z.object({
 
   // WhatsApp
   WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
+  WHATSAPP_BAILEYS_DEFAULT_LABEL: z.string().default("primary"),
+  WHATSAPP_BAILEYS_OWNER_NAME: z.string().optional(),
   EVOLUTION_API_BASE_URL: z.string().url().optional(),
   EVOLUTION_API_KEY: z.string().optional(),
   WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
@@ -85,6 +88,22 @@ if (raw.GROQ_API_KEY && !raw.AI_PROVIDER) {
 }
 
 export const env = envSchema.parse(raw);
+
+function parseTrustProxy(value: string): boolean | number | string {
+  const normalized = value.trim().toLowerCase();
+
+  if (normalized === "true") return true;
+  if (normalized === "false") return false;
+
+  const numericValue = Number.parseInt(value, 10);
+  if (!Number.isNaN(numericValue) && String(numericValue) === value.trim()) {
+    return numericValue;
+  }
+
+  return value;
+}
+
+export const trustProxy = parseTrustProxy(env.TRUST_PROXY);
 
 export function tenantRateLimitOverrides(): Record<string, number> {
   try {

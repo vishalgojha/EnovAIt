@@ -2,6 +2,7 @@
 
 FROM node:20-alpine AS deps
 WORKDIR /app
+RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
 RUN npm ci
 
@@ -17,11 +18,13 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 
+RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY packages/backend/.env.example ./.env.example
+RUN mkdir -p /data/baileys
 
 EXPOSE 8080
 CMD ["node", "dist/server/index.js"]

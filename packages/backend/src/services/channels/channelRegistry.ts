@@ -396,7 +396,14 @@ export const channelRegistry = {
         if (!input.to) {
           throw new AppError("Recipient phone is required for whatsapp_baileys", 400, "TO_REQUIRED");
         }
-        const result = await whatsappBaileysService.sendText(input.to, input.message);
+        if (!input.orgId) {
+          throw new AppError("Organization context is required for whatsapp_baileys", 400, "ORG_REQUIRED");
+        }
+        const result = await whatsappBaileysService.sendText({
+          orgId: input.orgId,
+          to: input.to,
+          message: input.message
+        });
         return {
           channel,
           accepted: true,
@@ -441,8 +448,17 @@ export const channelRegistry = {
     }
 
     if (channel === "whatsapp_baileys") {
+      if (!context?.orgId) {
+        return {
+          channel,
+          configured: false,
+          healthy: false,
+          detail: "org context required"
+        };
+      }
+
       try {
-        const status = await whatsappBaileysService.getStatus();
+        const status = await whatsappBaileysService.getStatus(context.orgId);
         return {
           channel,
           configured: true,
@@ -450,9 +466,10 @@ export const channelRegistry = {
           detail: `state=${status.connection_state}`
         };
       } catch (error) {
+        const configured = !(error instanceof AppError && error.code === "SUPABASE_NOT_CONFIGURED");
         return {
           channel,
-          configured: true,
+          configured,
           healthy: false,
           detail: `state=error (${error instanceof Error ? error.message : "unknown"})`
         };

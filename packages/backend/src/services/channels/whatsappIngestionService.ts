@@ -79,24 +79,36 @@ const resolveModuleId = async (orgId: string, integration: ResolvedIntegration):
   return preferred.id;
 };
 
-const resolveIntegration = async (integrationId?: string): Promise<ResolvedIntegration> => {
+const getIntegrationTypesForProvider = (provider: WhatsAppProvider): string[] => {
+  switch (provider) {
+    case "official":
+      return ["whatsapp_official"];
+    case "baileys":
+      return ["whatsapp_baileys"];
+    default:
+      return ["whatsapp_official", "whatsapp_baileys", "whatsapp_evolution"];
+  }
+};
+
+const resolveIntegration = async (provider: WhatsAppProvider, integrationId?: string): Promise<ResolvedIntegration> => {
+  const integrationTypes = getIntegrationTypesForProvider(provider);
   const query = supabaseAdmin
     .from("integrations")
     .select("id, org_id, module_id, integration_type, name, config")
     .eq("is_active", true)
-    .eq("integration_type", "whatsapp_official");
+    .in("integration_type", integrationTypes);
 
   if (integrationId) {
     const { data, error } = await query.eq("id", integrationId).single();
     if (error || !data) {
-      throw new AppError("WhatsApp integration not found", 404, "INTEGRATION_NOT_FOUND", error);
+      throw new AppError(`WhatsApp ${provider} integration not found`, 404, "INTEGRATION_NOT_FOUND", error);
     }
     return data as ResolvedIntegration;
   }
 
   const { data, error } = await query.order("created_at", { ascending: true }).limit(1).single();
   if (error || !data) {
-    throw new AppError("No active WhatsApp integration available", 400, "INTEGRATION_NOT_FOUND", error);
+    throw new AppError(`No active WhatsApp ${provider} integration available`, 400, "INTEGRATION_NOT_FOUND", error);
   }
   return data as ResolvedIntegration;
 };
@@ -239,21 +251,28 @@ P9: Consumer Value
 
 Just type your data or upload a file. I will sort it into the right BRSR section!`;
 
-const sendOnboardingReply = async (provider: WhatsAppProvider, toPhone: string): Promise<void> => {
+const sendOnboardingReply = async (provider: WhatsAppProvider, toPhone: string, orgId: string): Promise<void> => {
   if (provider === "official") {
     if (!env.WHATSAPP_META_ACCESS_TOKEN || !env.WHATSAPP_META_PHONE_NUMBER_ID) {
       throw new AppError("WhatsApp Official is not configured", 400, "WHATSAPP_OFFICIAL_NOT_CONFIGURED");
     }
     await whatsappOfficialService.sendText(toPhone, ONBOARDING_REPLY);
+  } else if (provider === "baileys") {
+    const { whatsappBaileysService } = await import("./whatsappBaileysService.js");
+    await whatsappBaileysService.sendText({
+      orgId,
+      to: toPhone,
+      message: ONBOARDING_REPLY
+    });
   } else {
-    // For baileys/generic: not yet supported, skip silently
+    // Generic webhook providers may be inbound-only.
     return;
   }
 };
 
 export const whatsappIngestionService = {
   async ingestWebhook(payload: unknown, integrationId?: string, provider: WhatsAppProvider = "official") {
-    const integration = await resolveIntegration(integrationId);
+    const integration = await resolveIntegration(provider, integrationId);
     const moduleId = await resolveModuleId(integration.org_id, integration);
     const messages = collectMessages(provider, payload);
 
@@ -280,7 +299,7 @@ export const whatsappIngestionService = {
         const phone = message.from;
         if (phone) {
           try {
-            await sendOnboardingReply(provider, phone);
+            await sendOnboardingReply(provider, phone, integration.org_id);
           } catch {
             // Log but don't fail the webhook
           }
@@ -323,7 +342,7 @@ export const whatsappIngestionService = {
             integration_name: integration.name,
             provider,
             record_type: "brsr_whatsapp_evidence",
-            source_channel: "whatsapp_official",
+            source_channel: integration.integration_type,
             message_id: message.message_id,
             from: message.from,
             from_name: message.from_name,
@@ -384,7 +403,7 @@ export const whatsappIngestionService = {
         dataRecordId: record.id,
         recordData: {
           record_type: "brsr_whatsapp_evidence",
-          source_channel: "whatsapp_official",
+          source_channel: integration.integration_type,
           integration_id: integration.id,
           integration_name: integration.name,
           provider,

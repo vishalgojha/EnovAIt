@@ -827,11 +827,11 @@ async function setup(args) {
       console.log(`1. Open or create the Coolify ${args.resourceType} named "${resourceName}".`);
       console.log("2. Use docker-compose.coolify.yml from this repo.");
       console.log("3. Add the env vars from your env file.");
-      console.log("4. Assign domains:");
+      console.log("4. Mount persistent storage at /data for Baileys sessions.");
+      console.log("5. Assign the public domain:");
       console.log("   - app.enov360.com");
-      console.log("   - api.enov360.com");
-      console.log("5. Run: npx coolify env --name <your-resource-name> --file <your-env-file>");
-      console.log("6. Run: npx coolify deploy --name <your-resource-name> --force");
+      console.log("6. Run: npx coolify env --name <your-resource-name> --file <your-env-file>");
+      console.log("7. Run: npx coolify deploy --name <your-resource-name> --force");
       return;
     }
 

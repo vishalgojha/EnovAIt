@@ -1,184 +1,171 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Plus, 
-  Search, 
-  FileText, 
-  Download, 
-  MoreVertical,
-  BarChart3,
-  Calendar,
-  Clock,
-  CheckCircle2,
-  RefreshCw,
-  FilePieChart,
-  FileBarChart,
-  FileSearch
-} from 'lucide-react';
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle, 
-  CardFooter 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { FileBarChart, FilePieChart, FileSearch, FileText, RefreshCw, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger,
-  DropdownMenuSeparator
-} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { reportApi } from '@/lib/api/endpoints';
-import { Report } from '@/types';
-import { cn } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import type { Report } from '@/types';
 
-const reportTypeIcons: Record<string, any> = {
+const reportTypeIcons: Record<string, typeof FileText> = {
   esg_summary: FilePieChart,
   operations_dashboard: FileBarChart,
   compliance_checklist: FileSearch,
+  brsr_annual_report: FileText,
   custom: FileText,
 };
+
+function formatDate(value: string) {
+  return new Date(value).toLocaleDateString();
+}
 
 export function ReportsPage() {
   const [search, setSearch] = React.useState('');
 
-  const { data: reports, isLoading } = useQuery({
+  const reportsQuery = useQuery({
     queryKey: ['reports'],
-    queryFn: reportApi.getReports,
-    initialData: [
-      { id: 'REP-001', title: 'Monthly ESG Summary', report_type: 'esg_summary', status: 'generated', generated_at: '2024-03-01T00:00:00Z' },
-      { id: 'REP-002', title: 'Operations Dashboard Snapshot', report_type: 'operations_dashboard', status: 'generated', generated_at: '2024-03-15T10:00:00Z' },
-      { id: 'REP-003', title: 'Compliance Checklist', report_type: 'compliance_checklist', status: 'generated', generated_at: '2024-03-26T11:00:00Z' },
-    ] as Report[],
+    queryFn: () => reportApi.getReports({ limit: 50 }),
+    initialData: [] as Report[],
   });
 
-  const filteredReports = reports?.filter(r => 
-    r.title.toLowerCase().includes(search.toLowerCase()) || 
-    r.report_type.toLowerCase().includes(search.toLowerCase())
-  );
+  const reports = reportsQuery.data ?? [];
+
+  const filteredReports = React.useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return reports;
+    }
+
+    return reports.filter((report) =>
+      [report.title, report.report_type, report.status].some((value) =>
+        value.toLowerCase().includes(query)
+      )
+    );
+  }, [reports, search]);
+
+  const readyCount = reports.filter((report) => report.status === 'generated').length;
+  const reportTypes = new Set(reports.map((report) => report.report_type)).size;
+  const latestReport = reports[0];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-2">
           <h1 className="text-3xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Generate and manage data visualizations and audit reports.</p>
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+            Open shared summaries and prepared updates without digging through raw records.
+          </p>
         </div>
-        <Button>
-          <Plus className="mr-2 h-4 w-4" />
-          Generate Report
+        <Button variant="outline" onClick={() => void reportsQuery.refetch()}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${reportsQuery.isFetching ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-3">
-        <Card className="bg-primary text-primary-foreground">
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium opacity-80">Total Reports</CardTitle>
-            <div className="text-3xl font-bold">128</div>
+            <CardDescription>Total reports</CardDescription>
+            <CardTitle className="text-3xl">{reports.length}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs opacity-70">+12 from last month</p>
+            <p className="text-sm text-muted-foreground">All saved reports visible to you right now.</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Ready to Download</CardTitle>
-            <div className="text-3xl font-bold">115</div>
+            <CardDescription>Ready to share</CardDescription>
+            <CardTitle className="text-3xl">{readyCount}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">90% of all generated</p>
+            <p className="text-sm text-muted-foreground">Reports already generated and available in the list.</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Scheduled</CardTitle>
-            <div className="text-3xl font-bold">8</div>
+            <CardDescription>Report types</CardDescription>
+            <CardTitle className="text-3xl">{reportTypes}</CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-xs text-muted-foreground">Automated weekly/monthly</p>
+            <p className="text-sm text-muted-foreground">
+              {latestReport ? `Latest report: ${formatDate(latestReport.generated_at)}` : 'No reports have been created yet.'}
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search reports..."
-            className="pl-9"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
-      </div>
+      <Card>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle>Saved reports</CardTitle>
+              <CardDescription>Search by report name, type, or current status.</CardDescription>
+            </div>
+            <div className="relative w-full lg:w-80">
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search reports"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
+            </div>
+          </div>
+          {reportsQuery.isError ? (
+            <p className="text-sm text-destructive">
+              We could not load the latest reports right now. You can refresh and try again.
+            </p>
+          ) : null}
+        </CardHeader>
+        <CardContent>
+          {filteredReports.length > 0 ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {filteredReports.map((report) => {
+                const Icon = reportTypeIcons[report.report_type] || FileText;
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredReports?.map((report) => {
-          const Icon = reportTypeIcons[report.report_type] || FileText;
-          return (
-            <Card key={report.id} className="group overflow-hidden">
-              <CardHeader className="pb-3 flex flex-row items-start justify-between space-y-0">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-muted-foreground">
-                    <Icon className="h-5 w-5" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-sm font-semibold">{report.title}</CardTitle>
-                    <CardDescription className="text-[10px] uppercase font-bold tracking-wider">{report.report_type}</CardDescription>
-                  </div>
-                </div>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="h-8 w-8">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Excel
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem className="text-destructive focus:text-destructive">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </CardHeader>
-              <CardContent className="pb-3">
-                <div className="flex items-center justify-between text-xs mb-2">
-                  <span className="text-muted-foreground">Status</span>
-                  <Badge variant={report.status === 'generated' ? 'outline' : 'secondary'} className="h-5 text-[10px]">
-                    {report.status !== 'generated' && <RefreshCw className="mr-1 h-2 w-2 animate-spin" />}
-                    {report.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">Created</span>
-                  <span className="font-medium">{new Date(report.generated_at).toLocaleDateString()}</span>
-                </div>
-              </CardContent>
-              <CardFooter className="p-0 border-t">
-                <Button variant="ghost" className="w-full rounded-none h-10 text-xs gap-2" disabled={report.status !== 'generated'}>
-                  <Download className="h-3 w-3" />
-                  Download Report
-                </Button>
-              </CardFooter>
-            </Card>
-          );
-        })}
-      </div>
+                return (
+                  <Card key={report.id} className="border bg-background shadow-none">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+                          <Icon className="h-5 w-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <CardTitle className="text-base">{report.title}</CardTitle>
+                          <CardDescription className="capitalize">
+                            {report.report_type.replace(/_/g, ' ')}
+                          </CardDescription>
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Status</span>
+                        <Badge variant={report.status === 'generated' ? 'outline' : 'secondary'}>
+                          {report.status.replace(/_/g, ' ')}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Created</span>
+                        <span>{formatDate(report.generated_at)}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">Reference</span>
+                        <span className="text-xs text-muted-foreground">{report.id}</span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="flex min-h-[220px] items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
+              {reportsQuery.isFetching ? 'Loading reports...' : 'No reports to show yet.'}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

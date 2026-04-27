@@ -1,5 +1,5 @@
 services:
-  enovait-api:
+  enovait:
     build:
       context: .
       dockerfile: packages/backend/Dockerfile
@@ -7,6 +7,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
+      TRUST_PROXY: ${TRUST_PROXY:-1}
       SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?SUPABASE_ANON_KEY is required}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
@@ -35,6 +36,8 @@ services:
       CHANNEL_WEBHOOK_TOKEN: ${CHANNEL_WEBHOOK_TOKEN:-}
       ENABLE_SUPER_ADMIN: ${ENABLE_SUPER_ADMIN:-false}
       WHATSAPP_BAILEYS_SESSION_PATH: /data/baileys
+      WHATSAPP_BAILEYS_DEFAULT_LABEL: ${WHATSAPP_BAILEYS_DEFAULT_LABEL:-primary}
+      WHATSAPP_BAILEYS_OWNER_NAME: ${WHATSAPP_BAILEYS_OWNER_NAME:-}
       EVOLUTION_API_BASE_URL: ${EVOLUTION_API_BASE_URL:-}
       EVOLUTION_API_KEY: ${EVOLUTION_API_KEY:-}
       WHATSAPP_META_ACCESS_TOKEN: ${WHATSAPP_META_ACCESS_TOKEN:-}
@@ -65,7 +68,7 @@ services:
     expose:
       - "8080"
     volumes:
-      - enovait-baileys-data:/data
+      - enovait-data:/data
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/v1/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
@@ -73,24 +76,5 @@ services:
       retries: 5
       start_period: 30s
 
-  enovait-ui:
-    build:
-      context: .
-      dockerfile: packages/ui/Dockerfile
-      args:
-        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-    expose:
-      - "3000"
-    healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
-
 volumes:
-  enovait-baileys-data: {}
+  enovait-data: {}

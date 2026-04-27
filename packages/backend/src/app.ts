@@ -17,12 +17,14 @@ import { chatRouter } from "./api/routes/chatRoutes.js";
 import { v1Router } from "./api/routes/v1Router.js";
 import { whatsappEvolutionWebhookRouter } from "./api/routes/whatsappEvolutionWebhookRoutes.js";
 import { whatsappWebhookRouter } from "./api/routes/whatsappWebhookRoutes.js";
+import { trustProxy } from "./config.js";
 import { requestLogger } from "./lib/logger.js";
 
 export const app = express();
 const clientDistDir = join(process.cwd(), "dist", "client");
 const hasClientBuild = existsSync(join(clientDistDir, "index.html"));
 
+app.set("trust proxy", trustProxy);
 app.use(helmet());
 app.use(cors());
 app.use(

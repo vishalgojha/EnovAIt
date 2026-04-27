@@ -9,10 +9,15 @@ import DashboardPage from "@/pages/Dashboard";
 import RolesPage from "@/pages/Modules";
 import ApprovalsPage from "@/pages/Readiness";
 import AssistantPage from "@/pages/AI";
+import { ActivityHistoryPage } from "@/pages/ActivityHistoryPage";
 import { ChannelsConsolePage } from "@/pages/ChannelsConsolePage";
+import { DataRecordsPage } from "@/pages/DataRecordsPage";
+import { IntegrationsPage } from "@/pages/IntegrationsPage";
+import { ReportsPage } from "@/pages/ReportsPage";
+import { SettingsPage } from "@/pages/SettingsPage";
+import { WorkflowsPage } from "@/pages/WorkflowsPage";
 import { useAuthStore } from "@/lib/store/auth";
 import { canAccessPath } from "@/lib/rbac";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { refreshSession } from "@/lib/api/auth";
 
@@ -44,28 +49,6 @@ function RedirectWithPermission({
   }
 
   return <>{element}</>;
-}
-
-function PlaceholderPage({
-  title,
-  description,
-}: {
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="grid min-h-[55vh] place-items-center">
-      <div className="w-full max-w-2xl rounded-3xl border border-white/10 bg-white/80 p-10 shadow-[0_20px_80px_-40px_rgba(12,18,20,0.35)] backdrop-blur">
-        <div className="mb-6 inline-flex rounded-full border border-primary/15 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-primary">
-          Workspace
-        </div>
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          {title}
-        </h1>
-        <p className="mt-4 max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>
-      </div>
-    </div>
-  );
 }
 
 function SessionRestoringScreen() {
@@ -177,17 +160,7 @@ export default function App() {
           />
           <Route
             path="/audit"
-            element={
-              <RedirectWithPermission
-                path="/audit"
-                element={
-                  <PlaceholderPage
-                    title="Activity History"
-                    description="See who made changes and when. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/audit" element={<ActivityHistoryPage />} />}
           />
           <Route
             path="/assistant"
@@ -207,73 +180,23 @@ export default function App() {
           />
           <Route
             path="/data"
-            element={
-              <RedirectWithPermission
-                path="/data"
-                element={
-                  <PlaceholderPage
-                    title="Records"
-                    description="Browse saved records, attached files, and updates in one place. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/data" element={<DataRecordsPage />} />}
           />
           <Route
             path="/reports"
-            element={
-              <RedirectWithPermission
-                path="/reports"
-                element={
-                  <PlaceholderPage
-                    title="Reports"
-                    description="Open shared summaries and ready-made updates here. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/reports" element={<ReportsPage />} />}
           />
           <Route
             path="/workflows"
-            element={
-              <RedirectWithPermission
-                path="/workflows"
-                element={
-                  <PlaceholderPage
-                    title="Steps & Follow-ups"
-                    description="This is where review steps and follow-up rules will appear. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/workflows" element={<WorkflowsPage />} />}
           />
           <Route
             path="/integrations"
-            element={
-              <RedirectWithPermission
-                path="/integrations"
-                element={
-                  <PlaceholderPage
-                    title="Connected Apps"
-                    description="Connect messaging, storage, and business tools here. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/integrations" element={<IntegrationsPage />} />}
           />
           <Route
             path="/settings"
-            element={
-              <RedirectWithPermission
-                path="/settings"
-                element={
-                  <PlaceholderPage
-                    title="Workspace Settings"
-                    description="Choose workspace preferences and defaults here. This area is coming soon."
-                  />
-                }
-              />
-            }
+            element={<RedirectWithPermission path="/settings" element={<SettingsPage />} />}
           />
 
           <Route path="/modules" element={<Navigate to="/roles" replace />} />

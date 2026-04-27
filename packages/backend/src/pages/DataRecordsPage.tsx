@@ -1,148 +1,164 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Search, 
-  Filter, 
-  Download, 
-  Eye, 
-  MoreHorizontal,
-  Tag
-} from 'lucide-react';
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from '@/components/ui/table';
-import { 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription 
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { RefreshCw, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { dataApi } from '@/lib/api/endpoints';
-import { DataRecord } from '@/types';
-import { Trash2 } from 'lucide-react';
+import type { DataRecord } from '@/types';
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString();
+}
 
 export function DataRecordsPage() {
   const [search, setSearch] = React.useState('');
 
-  const { data: records, isLoading } = useQuery({
+  const recordsQuery = useQuery({
     queryKey: ['data-records'],
-    queryFn: () => dataApi.getRecords(),
-    initialData: [
-      { id: 'REC-001', module_id: 'm1', record_type: 'esg_entry', title: 'Plant A - March', status: 'final', data: { facility: 'Plant A', energy_kwh: 12800 }, created_at: '2024-03-26T10:00:00Z', updated_at: '2024-03-26T10:00:00Z' },
-      { id: 'REC-002', module_id: 'm2', record_type: 'maintenance_log', title: 'HVAC Fault', status: 'draft', data: { asset_id: 'HVAC-122', severity: 'high' }, created_at: '2024-03-26T09:45:00Z', updated_at: '2024-03-26T09:45:00Z' },
-    ] as DataRecord[],
+    queryFn: () => dataApi.getRecords({ limit: 50 }),
+    initialData: [] as DataRecord[],
   });
 
-  const filteredRecords = records?.filter(r => 
-    r.id.toLowerCase().includes(search.toLowerCase()) || 
-    r.record_type.toLowerCase().includes(search.toLowerCase()) ||
-    JSON.stringify(r.data).toLowerCase().includes(search.toLowerCase())
-  );
+  const records = recordsQuery.data ?? [];
+
+  const filteredRecords = React.useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) {
+      return records;
+    }
+
+    return records.filter((record) =>
+      [
+        record.id,
+        record.title || '',
+        record.record_type,
+        record.status,
+        JSON.stringify(record.data || {}),
+      ].some((value) => value.toLowerCase().includes(query))
+    );
+  }, [records, search]);
+
+  const finalCount = records.filter((record) => record.status === 'final').length;
+  const draftCount = records.filter((record) => record.status === 'draft').length;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Data Records</h1>
-          <p className="text-muted-foreground">Browse and audit all data processed by your modules.</p>
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold tracking-tight">Records</h1>
+          <p className="max-w-2xl text-sm leading-7 text-muted-foreground">
+            Find saved forms, uploads, and structured updates from across the workspace.
+          </p>
         </div>
-        <Button variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export CSV
+        <Button variant="outline" onClick={() => void recordsQuery.refetch()}>
+          <RefreshCw className={`mr-2 h-4 w-4 ${recordsQuery.isFetching ? 'animate-spin' : ''}`} />
+          Refresh
         </Button>
       </div>
 
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Total records</CardDescription>
+            <CardTitle className="text-3xl">{records.length}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Everything currently saved in this workspace view.</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Ready records</CardDescription>
+            <CardTitle className="text-3xl">{finalCount}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Records marked complete and ready to use.</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Still in progress</CardDescription>
+            <CardTitle className="text-3xl">{draftCount}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">Records that may still need updates or review.</p>
+          </CardContent>
+        </Card>
+      </div>
+
       <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="relative w-64">
-                <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search records..."
-                  className="pl-9 h-9"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
-              <Button variant="outline" size="sm" className="h-9">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
-              </Button>
+        <CardHeader className="space-y-4">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <CardTitle>Saved records</CardTitle>
+              <CardDescription>Search by record name, type, or saved details.</CardDescription>
             </div>
-            <div className="text-xs text-muted-foreground">
-              Showing {filteredRecords?.length} of {records?.length} records
+            <div className="relative w-full lg:w-80">
+              <Search className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                className="pl-9"
+                placeholder="Search records"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+              />
             </div>
           </div>
+          {recordsQuery.isError ? (
+            <p className="text-sm text-destructive">
+              We could not load the latest records right now. You can refresh and try again.
+            </p>
+          ) : null}
         </CardHeader>
         <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[120px]">Record ID</TableHead>
-                <TableHead>Module</TableHead>
-                <TableHead>Payload Preview</TableHead>
-                <TableHead>Created At</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-[160px]">Record</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Saved</TableHead>
+                <TableHead>Preview</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredRecords?.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-mono text-xs font-medium">{record.id}</TableCell>
-                  <TableCell>
-                    <Badge variant="secondary" className="text-[10px] font-normal">
-                      {record.module_id} / {record.record_type}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="max-w-[300px]">
-                    <div className="truncate text-xs text-muted-foreground font-mono">
-                      {JSON.stringify(record.data)}
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
-                    {new Date(record.created_at).toLocaleString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Tag className="mr-2 h-4 w-4" />
-                          Add Tag
-                        </DropdownMenuItem>
-                        <DropdownMenuItem className="text-destructive focus:text-destructive">
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+              {filteredRecords.length > 0 ? (
+                filteredRecords.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <p className="font-medium">{record.title || record.id}</p>
+                        <p className="text-xs text-muted-foreground">{record.id}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className="capitalize text-muted-foreground">
+                      {record.record_type.replace(/_/g, ' ')}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={record.status === 'final' ? 'outline' : 'secondary'}>
+                        {record.status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {formatDateTime(record.updated_at || record.created_at)}
+                    </TableCell>
+                    <TableCell className="max-w-[360px] truncate text-sm text-muted-foreground">
+                      {Object.entries(record.data || {})
+                        .slice(0, 2)
+                        .map(([key, value]) => `${key}: ${String(value)}`)
+                        .join(' | ') || 'No extra details saved yet'}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={5} className="h-28 text-center text-sm text-muted-foreground">
+                    {recordsQuery.isFetching ? 'Loading records...' : 'No records to show yet.'}
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         </CardContent>
