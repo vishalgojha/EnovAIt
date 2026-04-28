@@ -40,7 +40,7 @@ export const envSchema = z.object({
   CHANNEL_WEBHOOK_TOKEN: z.string().optional(),
 ENABLE_SUPER_ADMIN: z.coerce.boolean().default(false),
 
-  // Legacy channels (deprecated - will be removed)
+  // Legacy (unused, kept for type compatibility)
   SLACK_BOT_TOKEN: z.string().optional(),
   SLACK_CHANNEL_DEFAULT: z.string().optional(),
   SLACK_WEBHOOK_URL: z.string().url().optional(),
@@ -55,19 +55,19 @@ ENABLE_SUPER_ADMIN: z.coerce.boolean().default(false),
   TWILIO_SMS_FROM: z.string().optional(),
   TWILIO_VOICE_FROM: z.string().optional(),
   TWILIO_VOICE_TWIML_URL: z.string().url().optional(),
-
-  // WhatsApp
-  WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
-  WHATSAPP_BAILEYS_DEFAULT_LABEL: z.string().default("primary"),
-  WHATSAPP_BAILEYS_OWNER_NAME: z.string().optional(),
-  EVOLUTION_API_BASE_URL: z.string().url().optional(),
-  EVOLUTION_API_KEY: z.string().optional(),
   WHATSAPP_META_ACCESS_TOKEN: z.string().optional(),
   WHATSAPP_META_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_META_API_VERSION: z.string().default("v22.0"),
   WHATSAPP_META_VERIFY_TOKEN: z.string().optional(),
 
-  // IoT / ERP / API
+  // WhatsApp (Baileys)
+  WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
+  WHATSAPP_BAILEYS_DEFAULT_LABEL: z.string().default("primary"),
+  WHATSAPP_BAILEYS_OWNER_NAME: z.string().optional(),
+  EVOLUTION_API_BASE_URL: z.string().url().optional(),
+  EVOLUTION_API_KEY: z.string().optional(),
+
+  // IoT / ERP
   IOT_MQTT_URL: z.string().url().optional(),
   IOT_MQTT_USERNAME: z.string().optional(),
   IOT_MQTT_PASSWORD: z.string().optional(),
