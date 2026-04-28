@@ -4,7 +4,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache git
 COPY packages/backend/package*.json packages/backend/package-lock.json* ./
-RUN npm ci
+RUN npm ci --include=dev
 COPY packages/backend/tsconfig.json packages/backend/vite.config.ts ./
 COPY packages/backend/src ./src
 RUN npm run build:server
