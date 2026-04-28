@@ -3,29 +3,27 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
 RUN apk add --no-cache git
-COPY package*.json ./
-COPY packages/backend/package*.json ./packages/backend/
-COPY packages/backend/package-lock.json* ./packages/backend/
-RUN npm ci --workspaces
+COPY packages/backend/package*.json packages/backend/package-lock.json* ./
+WORKDIR /app
+RUN npm ci
 
 FROM node:20-alpine AS build
 WORKDIR /app
-COPY . .
-RUN npm run build -w enovait-backend
+COPY packages/backend/tsconfig.json packages/backend/vite.config.ts ./
+COPY packages/backend/src ./src
+RUN npm run build
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=8080
 RUN apk add --no-cache git
-COPY package*.json ./
-COPY packages/backend/package*.json ./packages/backend/
-COPY packages/backend/package-lock.json* ./packages/backend/
-RUN npm ci --workspaces --omit=dev && npm cache clean --force
+COPY packages/backend/package*.json packages/backend/package-lock.json* ./
+RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=build /app/packages/backend/dist ./packages/backend/dist
+COPY --from=build /app/dist ./dist
 COPY packages/backend/.env.example ./.env.example
 RUN mkdir -p /data/baileys
 
 EXPOSE 8080
-CMD ["node", "packages/backend/dist/server/index.js"]
+CMD ["node", "dist/server/index.js"]
