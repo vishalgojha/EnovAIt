@@ -77,8 +77,9 @@ export const envSchema = z.object({
   ERP_CRM_WEBHOOK_URL: z.string().url().optional(),
   API_PARTNER_WEBHOOK_URL: z.string().url().optional(),
 
-  // Logging
+// Logging
   LOG_LEVEL: z.string().default("info"),
+  ALLOWED_ORIGINS: z.string().optional(),
 });
 
 // Self-heal: auto-detect Groq if key is present

@@ -61,7 +61,17 @@ export const getSupabaseAdmin = (): SupabaseClient => {
 
 export const supabaseAdmin = new Proxy({} as SupabaseClient, {
   get(_target, property, receiver) {
-    return Reflect.get(getSupabaseAdmin(), property, receiver);
+    const client = getSupabaseAdmin();
+    const value = Reflect.get(client, property, receiver);
+    if (typeof value === "function") {
+      return (...args: unknown[]) => {
+        if (!isSupabaseConfigured()) {
+          throw createRequiredSupabaseConfigError();
+        }
+        return Reflect.apply(value, client, args);
+      };
+    }
+    return value;
   }
 });
 

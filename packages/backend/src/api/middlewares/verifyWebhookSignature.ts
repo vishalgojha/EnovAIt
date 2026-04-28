@@ -26,6 +26,10 @@ const extractSignature = (req: Request): string | null => {
 
 export const verifyWebhookSignature = (req: Request, _res: Response, next: NextFunction): void => {
   if (!env.WEBHOOK_SIGNING_SECRET) {
+    if (env.NODE_ENV === "production") {
+      next(new AppError("Webhook signing secret not configured", 500, "WEBHOOK_SECRET_NOT_CONFIGURED"));
+      return;
+    }
     next();
     return;
   }

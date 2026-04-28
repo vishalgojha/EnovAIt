@@ -4,6 +4,8 @@ import helmet from "helmet";
 import { existsSync } from "node:fs";
 import { join, extname } from "node:path";
 
+import { env } from "./config.js";
+
 import { errorHandler } from "./api/middlewares/errorHandler.js";
 import { globalApiLimiter, tenantAwareLimiter, webhookLimiter } from "./api/middlewares/rateLimiters.js";
 import { sanitizeInput } from "./api/middlewares/sanitizeInput.js";
@@ -26,7 +28,16 @@ const hasClientBuild = existsSync(join(clientDistDir, "index.html"));
 
 app.set("trust proxy", trustProxy);
 app.use(helmet());
-app.use(cors());
+
+const corsOptions: cors.CorsOptions = {
+  origin: env.NODE_ENV === "production" 
+    ? (process.env.ALLOWED_ORIGINS?.split(",").filter(Boolean) || [])
+    : ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:3000", "http://127.0.0.1:5173"],
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "X-Webhook-Signature-SHA256"],
+};
+app.use(cors(corsOptions));
 app.use(
   express.json({
     limit: "2mb",
