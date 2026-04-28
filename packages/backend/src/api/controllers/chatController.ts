@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getMcpTools, callMcpTool, McpToolDefinition } from "../../services/mcp/supabaseClient.js";
+import { getMcpTools, callMcpTool } from "../../services/mcp/supabaseClient.js";
 import {
   buildCandidates,
   convertMcpToolsToOpenAI,

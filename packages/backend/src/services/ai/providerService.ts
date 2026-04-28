@@ -1,5 +1,4 @@
 import type { Request, Response } from "express";
-import { getMcpTools, callMcpTool, McpToolDefinition } from "../../services/mcp/supabaseClient.js";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "../../config.js";
 
