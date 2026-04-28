@@ -11,6 +11,12 @@ export interface FileAttachment {
 
 export type ProviderName = "Groq" | "OpenRouter" | "Ollama" | "OpenAI Compatible";
 
+interface McpToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+}
+
 export interface ProviderConfig {
   apiKey?: string;
   baseUrl: string;

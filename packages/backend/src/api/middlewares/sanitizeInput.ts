@@ -1,10 +1,10 @@
 import type { NextFunction, Request, Response } from "express";
-import xss, { type Options as XSSOptions } from "xss";
+import xss from "xss";
 
 const SAFE_TAGS = ["p", "br", "b", "i", "em", "strong", "a", "ul", "ol", "li", "h1", "h2", "h3", "h4", "h5", "h6", "code", "pre"];
 const SAFE_ATTRS = ["href", "target", "rel"];
 
-const xssOptions: XSSOptions = {
+const xssOptions = {
   whiteList: SAFE_TAGS.reduce((acc, tag) => {
     acc[tag] = SAFE_ATTRS;
     return acc;
