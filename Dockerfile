@@ -7,7 +7,7 @@ COPY packages/backend/package*.json packages/backend/package-lock.json* ./
 RUN npm ci
 COPY packages/backend/tsconfig.json packages/backend/vite.config.ts ./
 COPY packages/backend/src ./src
-RUN npm run build
+RUN npm run build:server
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
