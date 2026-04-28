@@ -38,7 +38,23 @@ export const envSchema = z.object({
   // Webhook / Security
   WEBHOOK_SIGNING_SECRET: z.string().optional(),
   CHANNEL_WEBHOOK_TOKEN: z.string().optional(),
-  ENABLE_SUPER_ADMIN: z.coerce.boolean().default(false),
+ENABLE_SUPER_ADMIN: z.coerce.boolean().default(false),
+
+  // Legacy channels (deprecated - will be removed)
+  SLACK_BOT_TOKEN: z.string().optional(),
+  SLACK_CHANNEL_DEFAULT: z.string().optional(),
+  SLACK_WEBHOOK_URL: z.string().url().optional(),
+  MSTEAMS_WEBHOOK_URL: z.string().url().optional(),
+  EMAIL_SMTP_HOST: z.string().optional(),
+  EMAIL_SMTP_PORT: z.coerce.number().int().positive().default(587),
+  EMAIL_SMTP_USER: z.string().optional(),
+  EMAIL_SMTP_PASS: z.string().optional(),
+  EMAIL_FROM: z.string().optional(),
+  TWILIO_ACCOUNT_SID: z.string().optional(),
+  TWILIO_AUTH_TOKEN: z.string().optional(),
+  TWILIO_SMS_FROM: z.string().optional(),
+  TWILIO_VOICE_FROM: z.string().optional(),
+  TWILIO_VOICE_TWIML_URL: z.string().url().optional(),
 
   // WhatsApp
   WHATSAPP_BAILEYS_SESSION_PATH: z.string().default(".baileys_auth"),
@@ -50,24 +66,6 @@ export const envSchema = z.object({
   WHATSAPP_META_PHONE_NUMBER_ID: z.string().optional(),
   WHATSAPP_META_API_VERSION: z.string().default("v22.0"),
   WHATSAPP_META_VERIFY_TOKEN: z.string().optional(),
-
-  // Slack / Email / Teams
-  SLACK_BOT_TOKEN: z.string().optional(),
-  SLACK_CHANNEL_DEFAULT: z.string().optional(),
-  SLACK_WEBHOOK_URL: z.string().url().optional(),
-  MSTEAMS_WEBHOOK_URL: z.string().url().optional(),
-  EMAIL_SMTP_HOST: z.string().optional(),
-  EMAIL_SMTP_PORT: z.coerce.number().int().positive().default(587),
-  EMAIL_SMTP_USER: z.string().optional(),
-  EMAIL_SMTP_PASS: z.string().optional(),
-  EMAIL_FROM: z.string().optional(),
-
-  // Twilio
-  TWILIO_ACCOUNT_SID: z.string().optional(),
-  TWILIO_AUTH_TOKEN: z.string().optional(),
-  TWILIO_SMS_FROM: z.string().optional(),
-  TWILIO_VOICE_FROM: z.string().optional(),
-  TWILIO_VOICE_TWIML_URL: z.string().url().optional(),
 
   // IoT / ERP / API
   IOT_MQTT_URL: z.string().url().optional(),
