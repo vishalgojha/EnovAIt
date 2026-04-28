@@ -1,14 +1,10 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:20-alpine AS deps
+FROM node:20-alpine AS builder
 WORKDIR /app
 RUN apk add --no-cache git
 COPY packages/backend/package*.json packages/backend/package-lock.json* ./
-WORKDIR /app
 RUN npm ci
-
-FROM node:20-alpine AS build
-WORKDIR /app
 COPY packages/backend/tsconfig.json packages/backend/vite.config.ts ./
 COPY packages/backend/src ./src
 RUN npm run build
@@ -21,7 +17,7 @@ RUN apk add --no-cache git
 COPY packages/backend/package*.json packages/backend/package-lock.json* ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-COPY --from=build /app/dist ./dist
+COPY --from=builder /app/dist ./dist
 COPY packages/backend/.env.example ./.env.example
 RUN mkdir -p /data/baileys
 
