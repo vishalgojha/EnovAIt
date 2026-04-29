@@ -2,11 +2,13 @@
 
 FROM node:20-alpine AS deps
 WORKDIR /app
+ENV NODE_ENV=development
 RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
-RUN npm ci
+RUN npm ci --include=dev
 
 FROM deps AS build
+ENV NODE_ENV=development
 COPY packages/backend/tsconfig.json ./
 COPY packages/backend/index.html ./
 COPY packages/backend/vite.config.ts ./
