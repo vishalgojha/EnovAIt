@@ -5,7 +5,7 @@ WORKDIR /app
 ENV NODE_ENV=development
 RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
-RUN npm ci --include=dev
+RUN npm ci
 
 FROM deps AS build
 ENV NODE_ENV=development
