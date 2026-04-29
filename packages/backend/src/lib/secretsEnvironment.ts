@@ -24,14 +24,15 @@ export const SecretsEnvironmentSchema = z
     SUPABASE_ANON_KEY: z.string().min(1),
     SUPABASE_SERVICE_ROLE_KEY: z.string().min(1),
     SUPABASE_JWT_SECRET: z.string().min(1),
-    AI_PROVIDER: z.enum(["anthropic", "openrouter", "openai_compatible", "ollama", "groq"]).optional(),
+    AI_PROVIDER: z.enum(["gemini", "groq", "openrouter", "openai", "openai_compatible", "anthropic"]).optional(),
     ANTHROPIC_API_KEY: optionalSecret,
     OPENROUTER_API_KEY: optionalSecret,
     OPENROUTER_MODEL: optionalSecret,
     OPENAI_BASE_URL: optionalUrl,
     OPENAI_API_KEY: optionalSecret,
     OPENAI_MODEL: optionalSecret,
-    OLLAMA_MODEL: optionalSecret,
+    GEMINI_API_KEY: optionalSecret,
+    GEMINI_MODEL: optionalSecret,
     GROQ_API_KEY: optionalSecret,
     GROQ_MODEL: optionalSecret
   })
@@ -60,11 +61,11 @@ export const SecretsEnvironmentSchema = z
       });
     }
 
-    if (value.AI_PROVIDER === "ollama" && !value.OPENAI_BASE_URL) {
+    if (value.AI_PROVIDER === "gemini" && !value.GEMINI_API_KEY) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        path: ["OPENAI_BASE_URL"],
-        message: "OPENAI_BASE_URL is required when AI_PROVIDER=ollama"
+        path: ["GEMINI_API_KEY"],
+        message: "GEMINI_API_KEY is required when AI_PROVIDER=gemini"
       });
     }
 
@@ -118,7 +119,7 @@ export interface SecretsEnvironmentStatus {
     anthropic: boolean;
     openrouter: boolean;
     openaiCompatible: boolean;
-    ollama: boolean;
+    gemini: boolean;
     groq: boolean;
   };
 }
@@ -144,16 +145,13 @@ export const readSecretsEnvironmentStatus = async (): Promise<SecretsEnvironment
       SUPABASE_JWT_SECRET: lookup.has("SUPABASE_JWT_SECRET") && lookup.get("SUPABASE_JWT_SECRET") !== ""
     },
     aiProvider: lookup.get("AI_PROVIDER") ?? null,
-    aiKeys: {
-      anthropic: lookup.has("ANTHROPIC_API_KEY") && lookup.get("ANTHROPIC_API_KEY") !== "",
-      openrouter: lookup.has("OPENROUTER_API_KEY") && lookup.get("OPENROUTER_API_KEY") !== "",
-      openaiCompatible: lookup.has("OPENAI_BASE_URL") && lookup.get("OPENAI_BASE_URL") !== "",
-      ollama:
-        lookup.get("AI_PROVIDER") === "ollama" &&
-        lookup.has("OPENAI_BASE_URL") &&
-        lookup.get("OPENAI_BASE_URL") !== "",
-      groq: lookup.has("GROQ_API_KEY") && lookup.get("GROQ_API_KEY") !== ""
-    }
+     aiKeys: {
+       anthropic: lookup.has("ANTHROPIC_API_KEY") && lookup.get("ANTHROPIC_API_KEY") !== "",
+       openrouter: lookup.has("OPENROUTER_API_KEY") && lookup.get("OPENROUTER_API_KEY") !== "",
+       openaiCompatible: lookup.has("OPENAI_BASE_URL") && lookup.get("OPENAI_BASE_URL") !== "",
+       gemini: lookup.has("GEMINI_API_KEY") && lookup.get("GEMINI_API_KEY") !== "",
+       groq: lookup.has("GROQ_API_KEY") && lookup.get("GROQ_API_KEY") !== ""
+     }
   };
 };
 

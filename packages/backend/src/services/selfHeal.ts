@@ -20,10 +20,10 @@ export async function selfHeal(): Promise<void> {
     fixes.push('Created app directory');
   }
 
-  // 3. Ensure .env file exists (create template if missing)
-  const envPath = path.resolve('/opt/enovait/api/.env');
-  if (!fs.existsSync(envPath)) {
-    const template = `# EnovAIt Backend Configuration
+    // 3. Ensure .env file exists (create template if missing)
+    const envPath = path.resolve('/opt/enovait/api/.env');
+    if (!fs.existsSync(envPath)) {
+      const template = `# EnovAIt Backend Configuration
 NODE_ENV=production
 PORT=3000
 
@@ -34,13 +34,18 @@ SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
 # AI Provider (At least one required)
-AI_PROVIDER=groq
+# Priority: Gemini → Groq → OpenRouter
+AI_PROVIDER=gemini
+GEMINI_API_KEY=your-gemini-key
+GEMINI_MODEL=gemini-2.0-flash
+
+# Secondary: Groq
 GROQ_API_KEY=your-groq-key
 GROQ_MODEL=llama-3.3-70b-versatile
 
-# Optional: OpenRouter fallback
+# Fallback: OpenRouter
 OPENROUTER_API_KEY=your-openrouter-key
-OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
+OPENROUTER_MODEL=openrouter/free
 `;
     try {
       fs.mkdirSync(path.dirname(envPath), { recursive: true });
@@ -52,33 +57,18 @@ OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct:free
   }
 
   // 4. Ensure AI provider is configured
-  if (!env.GROQ_API_KEY && !env.OPENROUTER_API_KEY && !env.OPENAI_API_KEY) {
+  if (!env.GEMINI_API_KEY && !env.GROQ_API_KEY && !env.OPENROUTER_API_KEY && !env.OPENAI_API_KEY) {
     logger.warn('No AI provider configured — AI chat will be unavailable');
-    logger.info('Set GROQ_API_KEY or OPENROUTER_API_KEY in your .env file');
+    logger.info('Set GEMINI_API_KEY, GROQ_API_KEY, or OPENROUTER_API_KEY in your .env file');
   }
 
-  // 5. Validate Supabase config
-  if (!env.SUPABASE_URL || env.SUPABASE_URL === 'https://placeholder.supabase.co') {
-    logger.warn('Supabase URL not configured — database operations will fail');
-  }
-
-  // 6. Check disk space (warn if < 1GB free)
-  try {
-    const stats = fs.statfsSync('/');
-    const freeGB = (stats.bfree * stats.bsize) / 1e9;
-    if (freeGB < 1) {
-      logger.warn({ freeGB }, 'Low disk space — consider cleanup');
-    }
-  } catch {
-    // statfsSync not available on all platforms
-  }
-
-  // 7. Log startup diagnostics
+  // 5. Log startup diagnostics
   logger.info({
     nodeEnv: env.NODE_ENV,
     port: env.PORT,
     aiProvider: env.AI_PROVIDER,
     supabaseConfigured: env.SUPABASE_URL !== 'https://placeholder.supabase.co',
+    geminiConfigured: !!env.GEMINI_API_KEY,
     groqConfigured: !!env.GROQ_API_KEY,
     openrouterConfigured: !!env.OPENROUTER_API_KEY,
   }, 'Self-heal diagnostics');

@@ -9,50 +9,25 @@ export interface FileAttachment {
   storage_path?: string;
 }
 
-export type ProviderName = "Groq" | "OpenRouter" | "Ollama" | "OpenAI Compatible";
-
-interface McpToolDefinition {
-  name: string;
-  description: string;
-  inputSchema: Record<string, unknown>;
-}
-
-export interface ProviderConfig {
-  apiKey?: string;
-  baseUrl: string;
-  provider: ProviderName;
-  model: string;
-}
+export type ProviderName = "Gemini" | "Groq" | "OpenRouter" | "OpenAI Compatible";
 
 export const FALLBACK = "I'm currently experiencing high demand. Please try again in a moment.";
 export const MAX_TOOL_ITERATIONS = 5;
-export const DEFAULT_OLLAMA_MODEL = "qwen2.5:3b";
+export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 export const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
 
-function getOllamaBaseUrl(): string {
-  if (process.env.AI_PROVIDER === "ollama" && process.env.OPENAI_BASE_URL) {
-    return process.env.OPENAI_BASE_URL;
-  }
-  return "http://127.0.0.1:11434/v1";
-}
-
-function isOllamaConfigured(): boolean {
-  return process.env.AI_PROVIDER === "ollama" || Boolean(process.env.OLLAMA_MODEL);
-}
-
 function getProviderConfig(provider: ProviderName, model: string): ProviderConfig | null {
+  if (provider === "Gemini") {
+    const apiKey = process.env.GEMINI_API_KEY || "";
+    if (!apiKey) return null;
+    return { apiKey, baseUrl: "https://generativelanguage.googleapis.com/v1", provider, model };
+  }
+
   if (provider === "Groq") {
     const apiKey = process.env.GROQ_API_KEY || "";
     if (!apiKey) return null;
     return { apiKey, baseUrl: "https://api.groq.com/openai/v1", provider, model };
-  }
-
-  if (provider === "Ollama") {
-    return {
-      baseUrl: getOllamaBaseUrl(),
-      provider,
-      model,
-    };
   }
 
   if (provider === "OpenAI Compatible") {
@@ -78,23 +53,24 @@ export function buildCandidates(requestedModel?: string): ProviderConfig[] {
 
   if (requested) {
     const looksLikeOpenRouterModel = requested.includes("/");
-    const looksLikeOllamaModel = requested.includes(":");
+    const looksLikeGeminiModel = requested.includes("gemini");
 
     if (looksLikeOpenRouterModel) {
       candidates.push(getProviderConfig("OpenRouter", requested));
-    } else if (looksLikeOllamaModel) {
-      candidates.push(getProviderConfig("Ollama", requested));
+    } else if (looksLikeGeminiModel) {
+      candidates.push(getProviderConfig("Gemini", requested));
     } else {
       candidates.push(getProviderConfig("Groq", requested));
       candidates.push(getProviderConfig("OpenAI Compatible", requested));
     }
   }
 
-  if (configuredProvider === "ollama") {
-    candidates.push(getProviderConfig("Ollama", process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL));
+  // Priority: Gemini → Groq → OpenRouter → OpenAI Compatible
+  if (configuredProvider === "gemini") {
+    candidates.push(getProviderConfig("Gemini", process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL));
   }
   if (configuredProvider === "groq") {
-    candidates.push(getProviderConfig("Groq", process.env.GROQ_MODEL || "llama-3.3-70b-versatile"));
+    candidates.push(getProviderConfig("Groq", process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL));
   }
   if (configuredProvider === "openrouter") {
     candidates.push(getProviderConfig("OpenRouter", process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL));
@@ -103,8 +79,9 @@ export function buildCandidates(requestedModel?: string): ProviderConfig[] {
     candidates.push(getProviderConfig("OpenAI Compatible", process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4o-mini"));
   }
 
-  candidates.push(getProviderConfig("Ollama", process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL));
-  candidates.push(getProviderConfig("Groq", process.env.GROQ_MODEL || "llama-3.3-70b-versatile"));
+  // Fallback chain
+  candidates.push(getProviderConfig("Gemini", process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL));
+  candidates.push(getProviderConfig("Groq", process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL));
   candidates.push(getProviderConfig("OpenRouter", process.env.OPENROUTER_MODEL || DEFAULT_OPENROUTER_MODEL));
   candidates.push(getProviderConfig("OpenAI Compatible", process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4o-mini"));
 
@@ -162,30 +139,25 @@ export async function extractFileText(file: FileAttachment): Promise<string> {
 
 export async function getProvidersHandler(_req: Request, res: Response) {
   const providers: Array<{ id: string; name: string; model: string; available: boolean }> = [];
-  if (isOllamaConfigured()) {
+
+  if (process.env.GEMINI_API_KEY) {
     providers.push({
-      id: "ollama",
-      name: "Ollama",
-      model: process.env.OLLAMA_MODEL || DEFAULT_OLLAMA_MODEL,
+      id: "gemini",
+      name: "Gemini",
+      model: process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL,
       available: true,
     });
   }
-  if (process.env.OPENAI_BASE_URL && process.env.AI_PROVIDER !== "ollama") {
-    providers.push({
-      id: "openai_compatible",
-      name: "OpenAI Compatible",
-      model: process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4o-mini",
-      available: true,
-    });
-  }
+
   if (process.env.GROQ_API_KEY) {
     providers.push({
       id: "groq",
       name: "Groq",
-      model: process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
+      model: process.env.GROQ_MODEL || DEFAULT_GROQ_MODEL,
       available: true,
     });
   }
+
   if (process.env.OPENROUTER_API_KEY) {
     providers.push({
       id: "openrouter",
@@ -194,7 +166,17 @@ export async function getProvidersHandler(_req: Request, res: Response) {
       available: true,
     });
   }
+
+  if (process.env.OPENAI_BASE_URL && process.env.AI_PROVIDER !== "gemini") {
+    providers.push({
+      id: "openai_compatible",
+      name: "OpenAI Compatible",
+      model: process.env.OPENAI_MODEL || process.env.AI_MODEL || "gpt-4o-mini",
+      available: true,
+    });
+  }
+
   const defaultProvider =
-    providers.find((provider) => provider.id === process.env.AI_PROVIDER)?.id || providers[0]?.id || "ollama";
+    providers.find((provider) => provider.id === process.env.AI_PROVIDER)?.id || providers[0]?.id || "gemini";
   res.json({ providers, default: defaultProvider });
 }

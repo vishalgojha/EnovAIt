@@ -1,5 +1,5 @@
 services:
-  enovait:
+  enovait-backend:
     build:
       context: .
       dockerfile: Dockerfile
@@ -7,22 +7,24 @@ services:
     environment:
       NODE_ENV: production
       PORT: 8080
-      TRUST_PROXY: ${TRUST_PROXY:-1}
-      SUPABASE_URL: ${SUPABASE_URL:?SUPABASE_URL is required}
-      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?SUPABASE_ANON_KEY is required}
-      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY:?SUPABASE_SERVICE_ROLE_KEY is required}
-      SUPABASE_JWT_SECRET: ${SUPABASE_JWT_SECRET:-}
-      AI_PROVIDER: ${AI_PROVIDER:-groq}
-      AI_MODEL: ${AI_MODEL:-llama-3.3-70b-versatile}
-      GROQ_API_KEY: ${GROQ_API_KEY:-}
-      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
-      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS:-60000}
-      RATE_LIMIT_GLOBAL_MAX: ${RATE_LIMIT_GLOBAL_MAX:-240}
-      RATE_LIMIT_TENANT_DEFAULT_MAX: ${RATE_LIMIT_TENANT_DEFAULT_MAX:-120}
-      WEBHOOK_SIGNING_SECRET: ${WEBHOOK_SIGNING_SECRET:-}
+      SUPABASE_URL:
+      SUPABASE_ANON_KEY:
+      SUPABASE_SERVICE_ROLE_KEY:
+      SUPABASE_JWT_SECRET:
+      GEMINI_API_KEY:
+      GEMINI_MODEL:
+      GROQ_API_KEY:
+      GROQ_MODEL:
+      AI_PROVIDER:
+      OPENROUTER_API_KEY:
+      OPENROUTER_MODEL:
+      TRUST_PROXY:
+      RATE_LIMIT_WINDOW_MS:
+      RATE_LIMIT_GLOBAL_MAX:
+      RATE_LIMIT_TENANT_DEFAULT_MAX:
       WHATSAPP_BAILEYS_SESSION_PATH: /data/baileys
-      WHATSAPP_BAILEYS_DEFAULT_LABEL: ${WHATSAPP_BAILEYS_DEFAULT_LABEL:-primary}
-      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WHATSAPP_BAILEYS_DEFAULT_LABEL:
+      LOG_LEVEL:
     expose:
       - "8080"
     volumes:
@@ -33,6 +35,16 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  enovait-ui:
+    build:
+      context: .
+      dockerfile: packages/ui/Dockerfile
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: /api/v1
+    expose:
+      - "80"
 
 volumes:
   enovait-data: {}

@@ -1,5 +1,6 @@
 import { env } from "../../config.js";
 import { AppError } from "../../lib/errors.js";
+import { GeminiExtractionProvider } from "./geminiProvider.js";
 import { AnthropicExtractionProvider } from "./anthropicProvider.js";
 import { GroqExtractionProvider } from "./groqProvider.js";
 import { OpenAIExtractionProvider } from "./openaiProvider.js";
@@ -15,7 +16,7 @@ class UnsupportedProvider implements AIExtractionProvider {
 
   public async extractStructuredData(): Promise<never> {
     throw new AppError(
-      `${this.providerName} provider is not implemented yet. Use groq, ollama, openai-compatible, anthropic, or openrouter.`,
+      `${this.providerName} provider is not implemented yet. Use gemini, groq, openrouter, openai, openai-compatible, or anthropic.`,
       501,
       "AI_PROVIDER_NOT_IMPLEMENTED"
     );
@@ -23,6 +24,18 @@ class UnsupportedProvider implements AIExtractionProvider {
 }
 
 export const createAIProvider = (): AIExtractionProvider => {
+  if (env.AI_PROVIDER === "gemini") {
+    return new GeminiExtractionProvider();
+  }
+
+  if (env.AI_PROVIDER === "groq") {
+    return new GroqExtractionProvider();
+  }
+
+  if (env.AI_PROVIDER === "openrouter") {
+    return new OpenRouterExtractionProvider();
+  }
+
   if (env.AI_PROVIDER === "openai") {
     return new OpenAIExtractionProvider();
   }
@@ -31,20 +44,8 @@ export const createAIProvider = (): AIExtractionProvider => {
     return new OpenAIExtractionProvider();
   }
 
-  if (env.AI_PROVIDER === "ollama") {
-    return new OpenAIExtractionProvider();
-  }
-
   if (env.AI_PROVIDER === "anthropic") {
     return new AnthropicExtractionProvider();
-  }
-
-  if (env.AI_PROVIDER === "openrouter") {
-    return new OpenRouterExtractionProvider();
-  }
-
-  if (env.AI_PROVIDER === "groq") {
-    return new GroqExtractionProvider();
   }
 
   return new UnsupportedProvider(env.AI_PROVIDER);

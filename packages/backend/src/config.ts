@@ -13,12 +13,13 @@ export const envSchema = z.object({
   SUPABASE_JWT_SECRET: z.string().default(""),
 
   // AI Provider
-  AI_PROVIDER: z.enum(["openai", "openai_compatible", "ollama", "anthropic", "openrouter", "groq", "grok"]).default("groq"),
-  AI_MODEL: z.string().default("llama-3.3-70b-versatile"),
+  AI_PROVIDER: z.enum(["gemini", "groq", "openrouter", "openai", "openai_compatible", "anthropic", "grok"]).default("gemini"),
+  AI_MODEL: z.string().default("gemini-2.0-flash"),
+  GEMINI_API_KEY: z.string().optional(),
+  GEMINI_MODEL: z.string().optional().default("gemini-2.0-flash"),
   OPENAI_API_KEY: z.string().optional(),
   OPENAI_MODEL: z.string().optional(),
   OPENAI_BASE_URL: z.string().url().optional(),
-  OLLAMA_MODEL: z.string().optional().default("qwen2.5:3b"),
   ANTHROPIC_API_KEY: z.string().optional(),
   ANTHROPIC_MODEL: z.string().optional(),
   OPENROUTER_API_KEY: z.string().optional(),
@@ -80,9 +81,11 @@ ENABLE_SUPER_ADMIN: z.coerce.boolean().default(false),
   ALLOWED_ORIGINS: z.string().optional(),
 });
 
-// Self-heal: auto-detect Groq if key is present
+// Self-heal: auto-detect Gemini if key is present
 const raw = { ...process.env };
-if (raw.GROQ_API_KEY && !raw.AI_PROVIDER) {
+if (raw.GEMINI_API_KEY && !raw.AI_PROVIDER) {
+  raw.AI_PROVIDER = "gemini";
+} else if (raw.GROQ_API_KEY && !raw.AI_PROVIDER) {
   raw.AI_PROVIDER = "groq";
 }
 

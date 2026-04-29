@@ -52,11 +52,11 @@ export async function checkSupabase(): Promise<ComponentHealth> {
 
 export async function checkAI(): Promise<ComponentHealth> {
   const hasAIKey = Boolean(
+    env.GEMINI_API_KEY ||
     env.GROQ_API_KEY ||
     env.OPENROUTER_API_KEY ||
     env.OPENAI_API_KEY ||
-    env.ANTHROPIC_API_KEY ||
-    env.AI_PROVIDER === "ollama"
+    env.ANTHROPIC_API_KEY
   );
 
   if (!hasAIKey) {
