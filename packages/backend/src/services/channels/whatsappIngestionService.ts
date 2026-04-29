@@ -1,13 +1,11 @@
 import { randomUUID } from "crypto";
 
-import { env } from "../../config.js";
 import { supabaseAdmin } from "../../lib/supabase.js";
 import { AppError } from "../../lib/errors.js";
 import { brsrExtractionService } from "../extraction/brsrExtractionService.js";
 import { workflowEngine } from "../workflow/workflowEngine.js";
-import { whatsappOfficialService } from "./whatsappOfficialService.js";
 
-type WhatsAppProvider = "official" | "baileys" | "generic";
+type WhatsAppProvider = "baileys" | "generic";
 
 interface ResolvedIntegration {
   id: string;
@@ -81,12 +79,10 @@ const resolveModuleId = async (orgId: string, integration: ResolvedIntegration):
 
 const getIntegrationTypesForProvider = (provider: WhatsAppProvider): string[] => {
   switch (provider) {
-    case "official":
-      return ["whatsapp_official"];
     case "baileys":
       return ["whatsapp_baileys"];
     default:
-      return ["whatsapp_official", "whatsapp_baileys", "whatsapp_evolution"];
+      return ["whatsapp_baileys"];
   }
 };
 
@@ -111,47 +107,6 @@ const resolveIntegration = async (provider: WhatsAppProvider, integrationId?: st
     throw new AppError(`No active WhatsApp ${provider} integration available`, 400, "INTEGRATION_NOT_FOUND", error);
   }
   return data as ResolvedIntegration;
-};
-
-const flattenOfficialMessages = (payload: unknown): NormalizedWhatsAppMessage[] => {
-  const root = asRecord(payload);
-  const entries = Array.isArray(root.entry) ? root.entry : [];
-  const messages: NormalizedWhatsAppMessage[] = [];
-
-  for (const entry of entries) {
-    const changes = Array.isArray((entry as Record<string, unknown>).changes) ? ((entry as Record<string, unknown>).changes as Array<Record<string, unknown>>) : [];
-    for (const change of changes) {
-      const value = asRecord(change.value);
-      const contacts = Array.isArray(value.contacts) ? (value.contacts as Array<Record<string, unknown>>) : [];
-      const contactName = asString(asRecord(contacts[0]?.profile).name);
-      const valueMessages = Array.isArray(value.messages) ? (value.messages as Array<Record<string, unknown>>) : [];
-
-      for (const message of valueMessages) {
-        const messageType = asString(message.type) ?? "unknown";
-        const messageId = asString(message.id) ?? randomUUID();
-        const from = normalizeFrom(message.from);
-        const timestamp = asString(message.timestamp);
-        const textBody = asString(asRecord(message.text).body);
-        const mediaObject = asRecord(message[messageType]);
-
-        messages.push({
-          message_id: messageId,
-          from,
-          from_name: contactName,
-          message_type: messageType,
-          text: textBody,
-          caption: asString(mediaObject.caption),
-          media_url: asString(mediaObject.link) ?? asString(mediaObject.url),
-          mime_type: asString(mediaObject.mime_type),
-          file_name: asString(mediaObject.filename),
-          timestamp,
-          raw: message
-        });
-      }
-    }
-  }
-
-  return messages;
 };
 
 const flattenGenericMessages = (payload: unknown): NormalizedWhatsAppMessage[] => {
@@ -202,17 +157,6 @@ const flattenGenericMessages = (payload: unknown): NormalizedWhatsAppMessage[] =
   return messages;
 };
 
-const collectMessages = (provider: WhatsAppProvider, payload: unknown): NormalizedWhatsAppMessage[] => {
-  if (provider === "official") {
-    const messages = flattenOfficialMessages(payload);
-    if (messages.length) {
-      return messages;
-    }
-  }
-
-  return flattenGenericMessages(payload);
-};
-
 const buildRecordTitle = (message: NormalizedWhatsAppMessage): string => {
   const name = message.from_name || message.from || "WhatsApp";
   const label = message.file_name || message.caption || message.text || message.message_type || "message";
@@ -251,30 +195,20 @@ P9: Consumer Value
 
 Just type your data or upload a file. I will sort it into the right BRSR section!`;
 
-const sendOnboardingReply = async (provider: WhatsAppProvider, toPhone: string, orgId: string): Promise<void> => {
-  if (provider === "official") {
-    if (!env.WHATSAPP_META_ACCESS_TOKEN || !env.WHATSAPP_META_PHONE_NUMBER_ID) {
-      throw new AppError("WhatsApp Official is not configured", 400, "WHATSAPP_OFFICIAL_NOT_CONFIGURED");
-    }
-    await whatsappOfficialService.sendText(toPhone, ONBOARDING_REPLY);
-  } else if (provider === "baileys") {
-    const { whatsappBaileysService } = await import("./whatsappBaileysService.js");
-    await whatsappBaileysService.sendText({
-      orgId,
-      to: toPhone,
-      message: ONBOARDING_REPLY
-    });
-  } else {
-    // Generic webhook providers may be inbound-only.
-    return;
-  }
+const sendOnboardingReply = async (toPhone: string, orgId: string): Promise<void> => {
+  const { whatsappBaileysService } = await import("./whatsappBaileysService.js");
+  await whatsappBaileysService.sendText({
+    orgId,
+    to: toPhone,
+    message: ONBOARDING_REPLY
+  });
 };
 
 export const whatsappIngestionService = {
-  async ingestWebhook(payload: unknown, integrationId?: string, provider: WhatsAppProvider = "official") {
+  async ingestWebhook(payload: unknown, integrationId?: string, provider: WhatsAppProvider = "baileys") {
     const integration = await resolveIntegration(provider, integrationId);
     const moduleId = await resolveModuleId(integration.org_id, integration);
-    const messages = collectMessages(provider, payload);
+    const messages = flattenGenericMessages(payload);
 
     if (!messages.length) {
       return {
@@ -299,7 +233,7 @@ export const whatsappIngestionService = {
         const phone = message.from;
         if (phone) {
           try {
-            await sendOnboardingReply(provider, phone, integration.org_id);
+            await sendOnboardingReply(phone, integration.org_id);
           } catch {
             // Log but don't fail the webhook
           }

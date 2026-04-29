@@ -46,6 +46,10 @@ GROQ_MODEL=llama-3.3-70b-versatile
 # Fallback: OpenRouter
 OPENROUTER_API_KEY=your-openrouter-key
 OPENROUTER_MODEL=openrouter/free
+
+# WhatsApp Baileys
+WHATSAPP_BAILEYS_SESSION_PATH=/data/baileys
+WHATSAPP_BAILEYS_DEFAULT_LABEL=primary
 `;
     try {
       fs.mkdirSync(path.dirname(envPath), { recursive: true });

@@ -16,13 +16,11 @@ export class OpenAIExtractionProvider implements AIExtractionProvider {
   private readonly model: string;
 
   constructor() {
-    const isOllama = env.AI_PROVIDER === "ollama";
-
     this.client = new OpenAI({
       apiKey: env.OPENAI_API_KEY ?? "local-api-key",
-      baseURL: env.OPENAI_BASE_URL ?? (isOllama ? "http://127.0.0.1:11434/v1" : undefined)
+      baseURL: env.OPENAI_BASE_URL ?? undefined
     });
-    this.model = isOllama ? env.OLLAMA_MODEL ?? env.OPENAI_MODEL ?? env.AI_MODEL : env.OPENAI_MODEL ?? env.AI_MODEL;
+    this.model = env.OPENAI_MODEL ?? env.AI_MODEL ?? "gpt-4o-mini";
   }
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {

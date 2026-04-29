@@ -1,11 +1,8 @@
 import { z } from "zod";
 
 export const SupportedChannelEnum = z.enum([
-  "whatsapp_official",
-  "whatsapp_evolution",
   "whatsapp_baileys",
   "email",
-  "slack",
   "msteams",
   "web_widget",
   "mobile_sdk",
@@ -33,7 +30,7 @@ export const ChannelWebhookParamSchema = z.object({
 });
 
 export const WhatsAppSendRequestSchema = z.object({
-  provider: z.enum(["official", "evolution", "baileys"]),
+  provider: z.enum(["baileys"]),
   to: z.string().min(6).max(30),
   message: z.string().min(1).max(4096)
 });

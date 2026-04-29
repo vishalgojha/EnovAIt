@@ -11,6 +11,13 @@ export interface FileAttachment {
 
 export type ProviderName = "Gemini" | "Groq" | "OpenRouter" | "OpenAI Compatible";
 
+export interface ProviderConfig {
+  apiKey: string;
+  baseUrl: string;
+  provider: ProviderName;
+  model: string;
+}
+
 export const FALLBACK = "I'm currently experiencing high demand. Please try again in a moment.";
 export const MAX_TOOL_ITERATIONS = 5;
 export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
@@ -34,7 +41,7 @@ function getProviderConfig(provider: ProviderName, model: string): ProviderConfi
     const baseUrl = process.env.OPENAI_BASE_URL || "";
     if (!baseUrl) return null;
     return {
-      apiKey: process.env.OPENAI_API_KEY || undefined,
+      apiKey: process.env.OPENAI_API_KEY || "",
       baseUrl,
       provider,
       model,
@@ -91,6 +98,12 @@ export function buildCandidates(requestedModel?: string): ProviderConfig[] {
     unique.set(`${candidate.provider}:${candidate.model}`, candidate);
   }
   return [...unique.values()];
+}
+
+export interface McpToolDefinition {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
 }
 
 export function convertMcpToolsToOpenAI(tools: McpToolDefinition[]): Array<Record<string, unknown>> {

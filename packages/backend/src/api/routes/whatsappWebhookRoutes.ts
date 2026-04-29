@@ -4,7 +4,7 @@ import { channelController } from "../controllers/channelController.js";
 
 export const whatsappWebhookRouter = Router();
 
-whatsappWebhookRouter.get("/", channelController.verifyOfficialWebhook);
-whatsappWebhookRouter.post("/", channelController.receiveOfficialWebhook);
-whatsappWebhookRouter.get("/:integrationId", channelController.verifyOfficialWebhook);
-whatsappWebhookRouter.post("/:integrationId", channelController.receiveOfficialWebhook);
+whatsappWebhookRouter.get("/", channelController.ingestWebhook);
+whatsappWebhookRouter.post("/", channelController.ingestWebhook);
+whatsappWebhookRouter.get("/:integrationId", channelController.ingestWebhook);
+whatsappWebhookRouter.post("/:integrationId", channelController.ingestWebhook);

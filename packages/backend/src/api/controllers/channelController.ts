@@ -5,17 +5,12 @@ import { AppError } from "../../lib/errors.js";
 import { getRequestContext } from "../../lib/requestContext.js";
 import { channelRegistry } from "../../services/channels/channelRegistry.js";
 import { whatsappBaileysService } from "../../services/channels/whatsappBaileysService.js";
-import { whatsappEvolutionService } from "../../services/channels/whatsappEvolutionService.js";
-import { whatsappIngestionService } from "../../services/channels/whatsappIngestionService.js";
-import { whatsappOfficialService } from "../../services/channels/whatsappOfficialService.js";
 import type { ChannelSendResult } from "../../services/channels/types.js";
 import {
   ChannelSendRequestSchema,
   ChannelStatusParamSchema,
   ChannelWebhookParamSchema,
-  OfficialWebhookVerifyQuerySchema,
   WhatsAppSendRequestSchema,
-  WhatsAppWebhookPathSchema
 } from "../schemas/channelSchemas.js";
 
 export const channelController = {
@@ -24,33 +19,22 @@ export const channelController = {
     const { auth } = getRequestContext(req);
 
     let result: ChannelSendResult;
-    if (payload.channel === "whatsapp_evolution") {
+
+    if (payload.channel === "whatsapp_baileys") {
       if (!payload.to) {
-        throw new AppError("Recipient phone is required for whatsapp_evolution", 400, "TO_REQUIRED");
+        throw new AppError("Recipient phone is required for whatsapp_baileys", 400, "TO_REQUIRED");
       }
-      const evolutionResult = await whatsappEvolutionService.sendText({
+      const baileysResult = await whatsappBaileysService.sendText({
         orgId: auth.orgId,
         to: payload.to,
         message: payload.message
       });
       result = {
-        channel: "whatsapp_evolution",
+        channel: "whatsapp_baileys",
         accepted: true,
-        external_id: evolutionResult.message_id,
-        detail: `Sent via Evolution API instance ${evolutionResult.instance}`
+        external_id: baileysResult.jid,
+        detail: "Sent via WhatsApp Baileys"
       };
-    } else if (payload.channel === "whatsapp_official") {
-      if (!payload.to) {
-        throw new AppError("Recipient phone is required for whatsapp_official", 400, "TO_REQUIRED");
-      }
-      const officialResult = await channelRegistry.send(payload.channel, {
-        to: payload.to,
-        subject: payload.subject,
-        message: payload.message,
-        metadata: payload.metadata,
-        orgId: auth.orgId
-      });
-      result = officialResult;
     } else {
       result = await channelRegistry.send(payload.channel, {
         to: payload.to,
@@ -73,12 +57,7 @@ export const channelController = {
   async getStatus(req: Request, res: Response) {
     const { channel } = ChannelStatusParamSchema.parse(req.params);
     const { auth } = getRequestContext(req);
-    const status =
-      channel === "whatsapp_evolution"
-        ? await whatsappEvolutionService.getStatus({ orgId: auth.orgId })
-        : channel === "whatsapp_official"
-          ? await channelRegistry.status(channel, { orgId: auth.orgId })
-          : await channelRegistry.status(channel, { orgId: auth.orgId });
+    const status = await channelRegistry.status(channel, { orgId: auth.orgId });
     res.status(200).json({ data: status });
   },
 
@@ -94,11 +73,6 @@ export const channelController = {
 
     const result = await channelRegistry.ingest(channel, req.body);
 
-    if (channel === "slack" && typeof result.summary.challenge === "string") {
-      res.status(200).send(result.summary.challenge);
-      return;
-    }
-
     res.status(200).json(result);
   },
 
@@ -106,13 +80,7 @@ export const channelController = {
     const payload = WhatsAppSendRequestSchema.parse(req.body);
     const { auth } = getRequestContext(req);
 
-    const channel =
-      payload.provider === "official"
-        ? "whatsapp_official"
-        : payload.provider === "evolution"
-          ? "whatsapp_evolution"
-          : "whatsapp_baileys";
-    const result = await channelRegistry.send(channel, {
+    const result = await channelRegistry.send("whatsapp_baileys", {
       to: payload.to,
       message: payload.message,
       metadata: {},
@@ -145,28 +113,5 @@ export const channelController = {
     const { auth } = getRequestContext(req);
     const result = await whatsappBaileysService.disconnect(auth.orgId);
     res.status(200).json({ data: result });
-  },
-
-  verifyOfficialWebhook(req: Request, res: Response) {
-    const query = OfficialWebhookVerifyQuerySchema.parse(req.query);
-    const challenge = whatsappOfficialService.verifyWebhook(
-      query["hub.mode"],
-      query["hub.verify_token"],
-      query["hub.challenge"]
-    );
-
-    res.status(200).send(challenge);
-  },
-
-  async receiveOfficialWebhook(req: Request, res: Response) {
-    const { integrationId } = WhatsAppWebhookPathSchema.parse(req.params);
-    const result = await whatsappIngestionService.ingestWebhook(req.body, integrationId, "official");
-    res.status(200).json({ received: true, ...result });
-  },
-
-  async receiveEvolutionWebhook(req: Request, res: Response) {
-    const { integrationId } = WhatsAppWebhookPathSchema.parse(req.params);
-    const result = await whatsappEvolutionService.ingestWebhook(req.body, integrationId);
-    res.status(200).json({ received: true, ...result });
   }
 };

@@ -196,9 +196,6 @@ export const writeSecretsEnvironment = async (updates: SecretsEnvironmentInput):
   if (updates.OPENAI_MODEL) {
     normalizedUpdates.OPENAI_MODEL = updates.OPENAI_MODEL;
   }
-  if (updates.OLLAMA_MODEL) {
-    normalizedUpdates.OLLAMA_MODEL = updates.OLLAMA_MODEL;
-  }
   if (updates.GROQ_API_KEY) {
     normalizedUpdates.GROQ_API_KEY = updates.GROQ_API_KEY;
   }

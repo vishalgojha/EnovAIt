@@ -217,7 +217,7 @@ export async function chatHandler(req: Request, res: Response): Promise<void> {
       body.reasoning = { enabled: true };
     }
 
-    const timeoutMs = candidate.provider === "Ollama" ? 10000 : 60000;
+    const timeoutMs = candidate.provider === "Groq" ? 10000 : 60000;
 
     const resp = await fetch(`${candidate.baseUrl}/chat/completions`, {
       method: "POST",

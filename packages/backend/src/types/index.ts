@@ -13,6 +13,8 @@ export interface User {
     | 'super_admin'
     | 'owner'
     | 'admin'
+    | 'cso'
+    | 'senior_manager'
     | 'manager'
     | 'member'
     | 'viewer'
@@ -56,10 +58,8 @@ export interface WorkflowRule {
 }
 
 export type IntegrationType = 
-  | 'whatsapp_official' 
   | 'whatsapp_baileys' 
   | 'email' 
-  | 'slack' 
   | 'msteams' 
   | 'sms' 
   | 'voice_ivr' 
