@@ -5,7 +5,8 @@ WORKDIR /app
 ENV NODE_ENV=development
 RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
-RUN npm ci
+COPY packages/backend/package-lock.json ./
+RUN npm install
 
 FROM deps AS build
 ENV NODE_ENV=development
@@ -22,7 +23,8 @@ ENV PORT=8080
 
 RUN apk add --no-cache git
 COPY packages/backend/package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+COPY packages/backend/package-lock.json ./
+RUN npm install --omit=dev && npm cache clean --force
 
 COPY --from=build /app/dist ./dist
 COPY packages/backend/.env.example ./.env.example
