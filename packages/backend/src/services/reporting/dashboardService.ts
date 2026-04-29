@@ -1,7 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-import { env } from "../../config.js";
-
-const supabase = createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY);
+import { getSupabaseAdmin } from "../../lib/supabase.js";
 
 export interface DashboardStats {
   readiness: { value: number; change: number };
@@ -25,6 +22,8 @@ export interface ModuleData {
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
+  const supabase = getSupabaseAdmin();
+
   const { data: org } = await supabase
     .from("organizations")
     .select("readiness_score, carbon_footprint")
@@ -64,6 +63,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 }
 
 export async function getRecentFilings(limit = 10): Promise<FilingRecord[]> {
+  const supabase = getSupabaseAdmin();
+
   const { data, error } = await supabase
     .from("reviews")
     .select("id, title, assigned_to, status, due_date")
