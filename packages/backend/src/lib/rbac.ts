@@ -7,6 +7,7 @@ export type Permission =
   | "rbac:read"
   | "rbac:manage"
   | "approvals:review"
+  | "filings:approve"
   | "audit:read"
   | "assistant:use"
   | "channels:manage"
@@ -21,6 +22,7 @@ export const permissions = {
   rbacRead: "rbac:read",
   rbacManage: "rbac:manage",
   approvals: "approvals:review",
+  filingsApprove: "filings:approve",
   audit: "audit:read",
   assistant: "assistant:use",
   channels: "channels:manage",
@@ -37,6 +39,18 @@ const rolePermissionMap: Record<Role, Permission[]> = {
   super_admin: ALL_PERMISSIONS,
   owner: ALL_PERMISSIONS,
   admin: ALL_PERMISSIONS,
+  cso: ALL_PERMISSIONS,
+  senior_manager: [
+    permissions.dashboard,
+    permissions.rbacRead,
+    permissions.approvals,
+    permissions.audit,
+    permissions.assistant,
+    permissions.data,
+    permissions.reports,
+    permissions.workflows,
+    permissions.filingsApprove,
+  ],
   manager: [
     permissions.dashboard,
     permissions.rbacRead,
@@ -152,6 +166,20 @@ export const roleCatalog: Array<{
     color: "from-emerald-900 to-emerald-600",
   },
   {
+    role: "cso",
+    label: "Chief Sustainability Officer",
+    summary: "Full access to all BRSR modules, can review, approve, and assign ESG tasks.",
+    scope: "ESG leadership",
+    color: "from-green-900 to-green-600",
+  },
+  {
+    role: "senior_manager",
+    label: "Senior Manager",
+    summary: "Full access to all BRSR modules, can review and assign, but cannot approve final filings.",
+    scope: "ESG operations",
+    color: "from-blue-900 to-blue-600",
+  },
+  {
     role: "admin",
     label: "Admin",
     summary: "Helps manage people, rules, and connected apps.",
@@ -228,6 +256,7 @@ export const permissionLabels: Record<Permission, string> = {
   "rbac:read": "People & access",
   "rbac:manage": "Change access",
   "approvals:review": "Review requests",
+  "filings:approve": "Approve filings",
   "audit:read": "Activity history",
   "assistant:use": "AI Chat",
   "channels:manage": "Messages",

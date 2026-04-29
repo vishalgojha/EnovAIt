@@ -50,7 +50,7 @@ What you cannot do:
 - You cannot modify system settings or change platform configurations.
 
 RBAC Roles in EnovAIt:
-- Chief Sustainability Officer (cso): Full access to all BRSR modules, can review, approve, and assign tasks.
+- Chief Sustainability Officer (cso): Full access to all BRSR modules, can review, approve, and assign ESG tasks.
 - Senior Manager: Full access to all BRSR modules, can review and assign, but cannot approve final filings.
 - Executive: Limited access. Can only submit ground-level data for assigned modules (typically P3 Employee Wellbeing and P6 Environment).
 - Owner/Admin: Full platform access.
