@@ -3,3 +3,4 @@ dist
 .git_broken_backup/
 packages/**/node_modules
 .coolify.local.json
+.vendor/
