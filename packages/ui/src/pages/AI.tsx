@@ -3,37 +3,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { 
-  Send, 
-  Sparkles, 
-  User, 
-  Bot, 
-  Paperclip, 
-  RefreshCcw,
-  MessageSquarePlus,
-  Zap
-} from "lucide-react";
+import { Send, User, Bot, Paperclip } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { GoogleGenAI } from "@google/genai";
 
 interface Message {
   role: "user" | "bot";
   content: string;
 }
 
-const aiRef = useRef<GoogleGenAI | null>(null);
+interface ChatResponse {
+  content: string;
+  reasoning?: string;
+  model: string;
+  provider: string;
+  error?: string;
+}
 
-const getAI = () => {
-  if (!aiRef.current) {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-    if (!apiKey) {
-      console.warn("VITE_GEMINI_API_KEY not set — AI assistant unavailable");
-      return null;
-    }
-    aiRef.current = new GoogleGenAI({ apiKey });
-  }
-  return aiRef.current;
-};
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "/api/v1";
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
@@ -41,6 +27,7 @@ export default function AIAssistant() {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [model, setModel] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,25 +45,30 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
-      const ai = getAI();
-      if (!ai) {
-        setMessages(prev => [...prev, { role: "bot", content: "AI assistant is not configured. Please set VITE_GEMINI_API_KEY in your environment." }]);
-        return;
-      }
+      const chatMessages = messages
+        .slice(1)
+        .concat({ role: "user" as const, content: userMessage })
+        .map(m => ({ role: m.role === "user" ? "user" : "assistant", content: m.content }));
 
-      const result = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: userMessage,
-        config: {
-          systemInstruction: "You are EnovAIt, a professional AI assistant for an enterprise operating model specializing in ESG (Environment, Social, and Governance) and BRSR (Business Responsibility and Sustainability Reporting). Keep responses concise and structured. Use a professional, authoritative tone.",
-        }
+      const resp = await fetch(`${API_BASE}/ai`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ messages: chatMessages, model: model || undefined }),
       });
 
-      const botResponse = result.text || "I apologize, I'm having trouble processing that request.";
-      setMessages(prev => [...prev, { role: "bot", content: botResponse }]);
+      if (!resp.ok) {
+        const err = await resp.json().catch(() => ({ error: "Unknown error" }));
+        throw new Error(err.error || `Server returned ${resp.status}`);
+      }
+
+      const data: ChatResponse = await resp.json();
+      setMessages(prev => [...prev, { role: "bot", content: data.content }]);
+      setModel(data.model || model);
     } catch (error) {
       console.error("AI Error:", error);
-      setMessages(prev => [...prev, { role: "bot", content: "I encountered an error connecting to my core processing unit. Please try again in a moment." }]);
+      const msg = error instanceof Error ? error.message : "Unknown error";
+      setMessages(prev => [...prev, { role: "bot", content: `I encountered an error: ${msg}. Please try again.` }]);
     } finally {
       setIsLoading(false);
     }
@@ -86,7 +78,9 @@ export default function AIAssistant() {
     <div className="flex h-[calc(100vh-12rem)] flex-col gap-4">
       <div className="flex items-end justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Intelligence Workspace</h1>
-        <p className="text-xs text-gray-500 italic">Connected to Gemini 3 Flash</p>
+        <p className="text-xs text-gray-500 italic">
+          {model ? `Connected to ${model}` : "AI Assistant"}
+        </p>
       </div>
 
       <Card className="flex-1 overflow-hidden border-gray-200 bg-white shadow-sm flex flex-col">
@@ -145,7 +139,7 @@ export default function AIAssistant() {
           <div className="p-6 border-t border-gray-100 bg-gray-50/50">
             <div className="relative">
               <Input
-                placeholder="Ask Enov360 Intelligence..."
+                placeholder="Ask EnovAIt Intelligence..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleSend()}
