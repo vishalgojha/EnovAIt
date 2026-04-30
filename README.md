@@ -1,6 +1,6 @@
 # EnovAIt
 
-EnovAIt is an India-first ESG and BRSR operations platform. It ingests evidence from WhatsApp, email, files, and system feeds, then turns that into reviewer queues, readiness tracking, and filing outputs.
+EnovAIt is an India-first ESG and BRSR operations platform. It ingests evidence from WhatsApp (Baileys), email, files, and system feeds, then turns that into reviewer queues, readiness tracking, and filing outputs.
 
 ## Quick Start
 
@@ -22,52 +22,104 @@ It must include these required values:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_JWT_SECRET`
 
-Optional AI provider settings:
+Optional AI provider settings (Primary → Fallback):
 
-- `AI_PROVIDER=anthropic` with `ANTHROPIC_API_KEY`
-- `AI_PROVIDER=openrouter` with `OPENROUTER_API_KEY`
-- `AI_PROVIDER=openai_compatible` with `OPENAI_BASE_URL`
+- `AI_PROVIDER=gemini` with `GEMINI_API_KEY` (Primary - supports PDF input)
+- `AI_PROVIDER=groq` with `GROQ_API_KEY` (Secondary)
+- `AI_PROVIDER=openrouter` with `OPENROUTER_API_KEY` (Fallback)
+
+For AI agent tools (MCP), also add:
+
+- `SUPABASE_ACCESS_TOKEN` - Personal access token from https://supabase.com/dashboard/account/tokens
+- `SUPABASE_PROJECT_REF` - Your project ref (e.g., `xfkfzpldrwdcjmzzwymz`)
 
 If you are setting this up by hand, the easiest path is to copy `packages/backend/.env.example` to `packages/backend/.env` and replace the placeholder values.
 
 ## Commands
 
-Run the backend in one command:
+**Prerequisites:**
+- Node.js 20+
+- Supabase project (https://supabase.com)
+- Gemini API key (https://aistudio.google.com/apikey)
+
+**Local Development:**
 
 ```powershell
-npm run backend
-```
+# Install dependencies
+npm run install:all
 
-Run the backend in watch mode:
+# Run backend in dev mode (with hot reload)
+npm run dev:backend
 
-```powershell
+# Run UI locally
+npm run dev:ui
+
+# Or run both with one command
 npm run dev
 ```
 
-Run the UI locally:
+**Production Build:**
 
 ```powershell
-npm run dev:ui
+# Build backend
+cd packages/backend; npm run build
+
+# Build UI
+cd packages/ui; npm run build
 ```
 
-Build the backend:
+**Using Docker (Coolify / Self-hosted):**
 
 ```powershell
-npm run build
+# Build with Docker Compose
+docker compose -f docker-compose.coolify.yml --env-file server-env.env up -d --force-recreate
+
+# Or let Coolify handle it automatically via git push
+git push origin main
 ```
 
-Build the UI:
+## WhatsApp Integration
 
-```powershell
-npm run build:ui
-```
+EnovAIt uses **WhatsApp Baileys** for messaging:
+
+- QR code login via `/api/v1/channels/whatsapp/status`
+- Session persisted in `/data/baileys`
+- No Meta Business account required
+
+## AI Agent Capabilities
+
+The AI assistant uses **function calling** via Supabase MCP tools:
+
+- Database: `execute_sql`, `list_tables`, `apply_migration`
+- Debugging: `get_logs`, `get_advisors`
+- Edge Functions: `list_edge_functions`, `deploy_edge_function`
+- Documentation: `search_docs`
+- Project Management: `list_projects`, `create_project`
+
+**Supported AI Models:**
+- **Gemini 2.5 Flash** (Primary - supports PDF input)
+- **Groq** (Secondary - `llama-3.3-70b-versatile`)
+- **OpenRouter** (Fallback - `openrouter/free`)
+
+## Roles & Permissions (RBAC)
+
+EnovAIt includes role-based access control for ESG reporting:
+
+| Role | Access Level |
+|------|--------------|
+| `cso` (Chief Sustainability Officer) | Full ESG access |
+| `senior_manager` | Review & assign, no final approval |
+| `owner` / `admin` | Full platform access |
+| `manager` / `c_env_officer` | Review workflows |
+| `member` / `viewer` | Limited / view-only |
 
 ## What This Includes
 
 - ESG and BRSR evidence ingestion
-- WhatsApp-based intake via supported providers
-- reviewer workflows and readiness tracking
-- subscription and seat management
+- WhatsApp Baileys-based intake
+- Reviewer workflows and readiness tracking
+- Supabase MCP tools for AI agent
+- Role-based access control (RBAC)
 - EnovAIt super admin controls
 
 ## Demo Notes
