@@ -100,15 +100,11 @@ export async function runStartupHealthChecks(): Promise<void> {
   const [supabase, ai] = await Promise.all([checkSupabase(), checkAI()]);
 
   if (supabase.status === "unhealthy") {
-    logger.error({ error: supabase.error }, "Supabase health check failed");
-    if (env.NODE_ENV === "production") {
-      throw new Error(`Startup failed: ${supabase.message}`);
-    }
-    logger.warn("Running in production without Supabase - some features may not work");
+    logger.warn("Supabase not configured — starting in degraded mode");
   }
 
-  if (ai.status === "unhealthy" && env.NODE_ENV === "production") {
-    logger.warn("AI provider not configured in production");
+  if (ai.status === "unhealthy") {
+    logger.warn("AI provider not configured — AI features unavailable");
   }
 
   logger.info({ supabase: supabase.status, ai: ai.status }, "Startup health checks complete");
