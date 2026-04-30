@@ -16,7 +16,7 @@ export class GeminiExtractionProvider implements AIExtractionProvider {
   }
 
   public async extractStructuredData(input: ExtractionInput): Promise<ExtractionResult> {
-    const model = env.GEMINI_MODEL ?? env.AI_MODEL ?? "gemini-2.0-flash";
+      const model = env.GEMINI_MODEL ?? env.AI_MODEL ?? "gemini-2.5-flash";
 
     const systemMsg = `You are an ESG data extraction assistant for module "${input.moduleName}" (${input.moduleCode}). 
 Extract structured data from the user's message and return a JSON object matching the expected schema.

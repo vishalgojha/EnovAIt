@@ -20,7 +20,7 @@ export interface ProviderConfig {
 
 export const FALLBACK = "I'm currently experiencing high demand. Please try again in a moment.";
 export const MAX_TOOL_ITERATIONS = 5;
-export const DEFAULT_GEMINI_MODEL = "gemini-2.0-flash";
+export const DEFAULT_GEMINI_MODEL = "gemini-2.5-flash";
 export const DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile";
 export const DEFAULT_OPENROUTER_MODEL = "openrouter/free";
 

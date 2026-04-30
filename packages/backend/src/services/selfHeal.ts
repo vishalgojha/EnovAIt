@@ -37,7 +37,7 @@ SUPABASE_JWT_SECRET=your-jwt-secret
 # Priority: Gemini → Groq → OpenRouter
 AI_PROVIDER=gemini
 GEMINI_API_KEY=your-gemini-key
-GEMINI_MODEL=gemini-2.0-flash
+GEMINI_MODEL=gemini-2.5-flash
 
 # Secondary: Groq
 GROQ_API_KEY=your-groq-key
