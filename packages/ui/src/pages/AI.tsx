@@ -21,7 +21,19 @@ interface Message {
   content: string;
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const aiRef = useRef<GoogleGenAI | null>(null);
+
+const getAI = () => {
+  if (!aiRef.current) {
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      console.warn("VITE_GEMINI_API_KEY not set — AI assistant unavailable");
+      return null;
+    }
+    aiRef.current = new GoogleGenAI({ apiKey });
+  }
+  return aiRef.current;
+};
 
 export default function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([
@@ -46,6 +58,12 @@ export default function AIAssistant() {
     setIsLoading(true);
 
     try {
+      const ai = getAI();
+      if (!ai) {
+        setMessages(prev => [...prev, { role: "bot", content: "AI assistant is not configured. Please set VITE_GEMINI_API_KEY in your environment." }]);
+        return;
+      }
+
       const result = await ai.models.generateContent({
         model: "gemini-3-flash-preview",
         contents: userMessage,
